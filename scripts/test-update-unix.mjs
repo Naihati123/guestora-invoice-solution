@@ -45,8 +45,8 @@ const extractZip = (zip, dest) => {
 };
 const makeZip = (parent, out) => {
   const r = process.platform === 'win32'
-    ? run(tarExe, ['-a', '-c', '-f', out, '-C', parent, 'Free-GST-Billing'])
-    : run('zip', ['-qr', out, 'Free-GST-Billing'], { cwd: parent });
+    ? run(tarExe, ['-a', '-c', '-f', out, '-C', parent, 'Guestora-Invoice'])
+    : run('zip', ['-qr', out, 'Guestora-Invoice'], { cwd: parent });
   if (r.status !== 0) throw new Error(`could not create ${out}: ${r.stderr || r.stdout}`);
 };
 
@@ -73,7 +73,7 @@ const ALPINE = [...PRELUDE,
   'if command -v bash >/dev/null 2>&1; then fail "image has no bash (the NAS case)" "bash exists"; else pass "image has no bash (the NAS case)"; fi',
   'T=/tmp/fgsb; rm -rf "$T"; mkdir -p "$T"; cd "$T"',
   'if unzip -q /work/pkg.zip -d old > unzip.out 2>&1; then pass "release ZIP opens with BusyBox unzip"; else fail "release ZIP opens with BusyBox unzip" "$(head -c 300 unzip.out)"; fi',
-  'S="$T/old/Free-GST-Billing/_system"',
+  'S="$T/old/Guestora-Invoice/_system"',
   'if [ -f "$S/server.js" ]; then pass "ZIP unpacks into real folders (portable / paths)"; else fail "ZIP unpacks into real folders (portable / paths)" "$(ls old | head -n 3 | tr "\\n" " ")"; fi',
   'if [ -f "$S/update-unix.sh" ]; then pass "update-unix.sh ships inside _system/"; else fail "update-unix.sh ships inside _system/"; exit 0; fi',
   'NEWVER=$(version_of "$S")',
@@ -83,7 +83,7 @@ const ALPINE = [...PRELUDE,
   `mkdir -p "$S/data/bills" && echo ${KEEP} > "$S/data/bills/keep-me.json"`,
   '# v1.10.83 - files an older version had and the new one does not: a clean update removes them.',
   'echo old > "$S/old-script-v1.sh"; mkdir -p "$S/old-folder" "$S/Saved Invoices" && echo old > "$S/old-folder/x.js" && echo pdf > "$S/Saved Invoices/INV-1.pdf"',
-  'echo old > "$T/old/Free-GST-Billing/Free GST Billing - OLD LAUNCHER.sh"',
+  'echo old > "$T/old/Guestora-Invoice/Guestora Invoice - OLD LAUNCHER.sh"',
   '',
   '# 1 --- a normal update',
   'FGSB_UPDATE_ZIP=/work/pkg.zip sh "$S/update-unix.sh" > /work/alpine-1.log 2>&1; code=$?',
@@ -96,7 +96,7 @@ const ALPINE = [...PRELUDE,
   'if grep -q "All [0-9]* entries extracted completely" /work/alpine-1.log; then pass "1 every file was checked against the ZIP"; else fail "1 every file was checked against the ZIP"; fi',
   'if [ ! -e "$S/.update-previous" ]; then pass "1 rollback copy removed afterwards"; else fail "1 rollback copy removed afterwards"; fi',
   'if [ ! -e "$S/old-script-v1.sh" ] && [ ! -e "$S/old-folder" ]; then pass "1 files the new version no longer has are removed"; else fail "1 files the new version no longer has are removed"; fi',
-  'if [ ! -e "$T/old/Free-GST-Billing/Free GST Billing - OLD LAUNCHER.sh" ]; then pass "1 old launchers are removed"; else fail "1 old launchers are removed"; fi',
+  'if [ ! -e "$T/old/Guestora-Invoice/Guestora Invoice - OLD LAUNCHER.sh" ]; then pass "1 old launchers are removed"; else fail "1 old launchers are removed"; fi',
   'if [ -f "$S/Saved Invoices/INV-1.pdf" ]; then pass "1 Saved Invoices is kept"; else fail "1 Saved Invoices is kept"; fi',
   'if [ -d "$S/node_modules/express" ]; then pass "1 dependencies installed"; else fail "1 dependencies installed"; fi',
   'if grep -q "Reinstalling dependencies" /work/alpine-1.log; then fail "1 shipped packages used, npm not run"; else pass "1 shipped packages used, npm not run"; fi',
@@ -134,7 +134,7 @@ const ALPINE = [...PRELUDE,
   'V=$(version_of "$S"); if [ "$V" = "$NEWVER" ] && [ "$(backups)" = "$N" ] && [ ! -e "$S/.update-previous" ]; then pass "4 nothing was changed or backed up"; else fail "4 nothing was changed or backed up" "v$V, backups $N -> $(backups)"; fi',
   '',
   '# 5 --- never downgrade',
-  'cp -R "$T/old" "$T/newer"; SN="$T/newer/Free-GST-Billing/_system"; set_version "$SN" 99.0.0',
+  'cp -R "$T/old" "$T/newer"; SN="$T/newer/Guestora-Invoice/_system"; set_version "$SN" 99.0.0',
   'N=$(backups)',
   'FGSB_UPDATE_ZIP=/work/pkg.zip sh "$SN/update-unix.sh" > /work/alpine-5.log 2>&1; code=$?',
   'if [ "$code" = 0 ] && grep -q "is newer than the latest release" /work/alpine-5.log; then pass "5 a newer install is left alone"; else fail "5 a newer install is left alone" "exit $code"; fi',
@@ -150,7 +150,7 @@ const ALPINE = [...PRELUDE,
 const SLIM = [...PRELUDE,
   'if [ "$(readlink -f /bin/sh)" = /usr/bin/dash ] || [ "$(readlink -f /bin/sh)" = /bin/dash ]; then pass "7 /bin/sh is dash"; else fail "7 /bin/sh is dash" "$(readlink -f /bin/sh)"; fi',
   'if command -v unzip >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1; then fail "7 image has neither unzip nor python3"; else pass "7 image has neither unzip nor python3"; fi',
-  'T=/tmp/fgsb; mkdir -p "$T"; cp -R /work/src/Free-GST-Billing "$T/old"',
+  'T=/tmp/fgsb; mkdir -p "$T"; cp -R /work/src/Guestora-Invoice "$T/old"',
   'S="$T/old/_system"; NEWVER=$(version_of "$S"); set_version "$S" 1.10.0',
   `mkdir -p "$S/data/bills" && echo ${KEEP} > "$S/data/bills/keep-me.json"`,
   'FGSB_UPDATE_ZIP=/work/pkg.zip sh "$S/update-unix.sh" > /work/slim-7.log 2>&1; code=$?',
@@ -180,7 +180,7 @@ if (run('docker', ['version']).status !== 0) {
 // The app ZIP only: release-build/ also holds docs-v<ver>.zip (npm run
 // docs:zip), which is newer and has no app in it.
 const zipName = existsSync(OUT_DIR) && readdirSync(OUT_DIR)
-  .filter((f) => /^Free-GST-Billing-v[\d.]+\.zip$/.test(f))
+  .filter((f) => /^Guestora-Invoice-v[\d.]+\.zip$/.test(f))
   .map((f) => ({ f, t: statSync(join(OUT_DIR, f)).mtimeMs }))
   .sort((a, b) => b.t - a.t)[0]?.f;
 if (!zipName) {
@@ -198,7 +198,7 @@ try {
   // A package that cannot install: newer, with a dependency that does not
   // exist, and a visibly different dist/index.html so a rollback is provable.
   extractZip(pkgZip, join(work, 'broken-src'));
-  const brokenSystem = join(work, 'broken-src', 'Free-GST-Billing', '_system');
+  const brokenSystem = join(work, 'broken-src', 'Guestora-Invoice', '_system');
   const pkg = JSON.parse(readFileSync(join(brokenSystem, 'package.json'), 'utf8'));
   pkg.version = '9.9.9';
   pkg.dependencies = { ...pkg.dependencies, 'fgsb-this-package-does-not-exist': '0.0.1' };

@@ -1,4 +1,4 @@
-# Free GST Billing - remove the app (Control Panel -> Remove the app).
+# Guestora Invoice - remove the app (Control Panel -> Remove the app).
 #
 # The server starts this from a temp copy and exits; this waits for it, then
 # deletes. The program and its icons always go; -Data, -Pdfs and -Backups say
@@ -72,7 +72,7 @@ if (-not $Pdfs) { $keep += 'Saved Invoices', 'Trash' }
 for ($try = 0; $try -lt 5; $try++) {
   Get-ChildItem -LiteralPath $Sys -Force | Where-Object { $keep -notcontains $_.Name } | Remove-Item -Recurse -Force
   # Only the app's own files beside _system; anything else there is the user's.
-  Get-ChildItem -LiteralPath $root -Force | Where-Object { $_.Name -like 'Free GST Billing - *' -or $_.Name -eq 'READ ME FIRST.txt' } | Remove-Item -Recurse -Force
+  Get-ChildItem -LiteralPath $root -Force | Where-Object { $_.Name -like 'Guestora Invoice - *' -or $_.Name -like 'Free GST Billing - *' -or $_.Name -eq 'READ ME FIRST.txt' } | Remove-Item -Recurse -Force
   if (-not @(Get-ChildItem -LiteralPath $Sys -Force | Where-Object { $keep -notcontains $_.Name }).Count) { break }
   Start-Sleep -Seconds 1
 }
@@ -82,7 +82,7 @@ if ($Backups) { Remove-Item -LiteralPath $backupHome -Recurse -Force }
 
 $left = @(Get-ChildItem -LiteralPath $Sys -Force | Where-Object { $keep -notcontains $_.Name })
 if ($left.Count) {
-  $wsh.Popup("Free GST Billing could not remove some of its files. Restart the computer, then delete this folder by hand:`n`n$root", 0, 'Free GST Billing', 48) | Out-Null
+  $wsh.Popup("Guestora Invoice could not remove some of its files. Restart the computer, then delete this folder by hand:`n`n$root", 0, 'Guestora Invoice', 48) | Out-Null
 }
 # The temp copy the server made; never the folder if run from _system by hand.
 if ((Split-Path -Leaf $PSScriptRoot) -like 'fgsb-remove-*') { Remove-Item -LiteralPath $PSScriptRoot -Recurse -Force }

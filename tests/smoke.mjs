@@ -37,6 +37,17 @@ const check = (name, pass, detail = '') => {
 /** Boot the app unless the caller pointed us at a running one. */
 async function startServer() {
   if (process.env.APP_URL) return process.env.APP_URL;
+  // Started from here, the server keeps its data in THIS folder's data/ - the
+  // real books when the app is run from this folder. The suite creates and
+  // deletes invoices and changes settings, so it only runs on a throwaway
+  // copy: npm run release:zip (scripts/verify-release.mjs) runs it against
+  // the extracted ZIP. SMOKE_USE_REPO_DATA=1 overrides, for a folder whose
+  // data/ holds nothing that matters.
+  if (process.env.SMOKE_USE_REPO_DATA !== '1') {
+    console.error('\n  Not running: the smoke suite would change the invoices and settings in this folder\'s data/.\n'
+      + '  Run it with npm run release:zip (a throwaway copy), or point APP_URL at a test copy.\n');
+    process.exit(1);
+  }
   serverProc = spawn(process.execPath, ['server.js'], { stdio: ['ignore', 'pipe', 'pipe'] });
   const url = await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('server did not report a port within 30s')), 30_000);
@@ -1848,16 +1859,15 @@ try {
     for (const id of made79) await page.evaluate(async (id) => fetch('/api/bills/' + encodeURIComponent(id), { method: 'DELETE' }), id);
   }
 
-  // ---- v1.10.80: Support page payment note names the business ------------
+  // ---- About page: the app's name, and the credit the MIT licence asks for --
   {
-    const prof80 = await page.evaluate(async () => (await fetch('/api/profile')).json());
     await page.evaluate(() => { sessionStorage.removeItem('gst_editingBill'); sessionStorage.removeItem('gst_invoiceDraft'); sessionStorage.setItem('gst_currentView', 'support'); });
     await page.reload({ waitUntil: 'networkidle' });
     await sleep(2500);
     await dismissFirstRun(page);
-    const noteText = await page.getByText(/^Payment note:/).first().innerText().catch(() => '');
-    const expected = ('Free GST Billing support - ' + String(prof80.businessName || '').replace(/[^A-Za-z0-9 .-]+/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, 50).trim();
-    check('v80 the UPI payment note names the business', !!prof80.businessName && noteText.includes(expected), noteText);
+    const aboutText = await page.locator('.dashboard-container').first().innerText().catch(() => '');
+    check('About names Guestora Invoice and credits Free GST Billing Software by DiceCodes',
+      aboutText.includes('Guestora Invoice') && aboutText.includes('Free GST Billing Software') && aboutText.includes('DiceCodes'), aboutText.slice(0, 200));
   }
 
   // Put the real business details back.

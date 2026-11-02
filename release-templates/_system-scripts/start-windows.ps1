@@ -1,4 +1,4 @@
-# Free GST Billing - Windows start-server + open-browser.
+# Guestora Invoice - Windows start-server + open-browser.
 #
 # Invoked by the HTA launcher's "Open App" button and by the
 # Desktop shortcut. Idempotent - safe to click multiple times.
@@ -13,52 +13,56 @@
 param([switch]$AppWindow, [switch]$Hidden)
 
 $ErrorActionPreference = 'Continue'
-$Host.UI.RawUI.WindowTitle = 'Free GST Billing - Server'
+$Host.UI.RawUI.WindowTitle = 'Guestora Invoice - Server'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $SystemDir = $ScriptDir
 
-# v1.10.69 - the Windows launcher was renamed from "Free GST Billing.hta" to
-# "Free GST Billing - WINDOWS.hta". An update to this version is carried out
-# by the PREVIOUS version's updater, which copies the new launcher in but
-# knows nothing of the rename: it leaves the old file beside the new one, and
-# the Desktop and Start-Menu shortcuts still pointing at the old one. That
-# works, but it leaves two launchers in the folder and the user on the old
-# screen. This script is the first new code to run after such an update -
-# both launchers call it for Open App - so it tidies up here, once.
+# The Windows launcher has been renamed twice: "Free GST Billing.hta" became
+# "Free GST Billing - WINDOWS.hta" (v1.10.69), and that became "Guestora
+# Invoice - WINDOWS.hta" when the app was renamed. An update is carried out by
+# the PREVIOUS version's updater, which copies the new launcher in but knows
+# nothing of the rename: it leaves the old file beside the new one, and the
+# Desktop and Start-Menu shortcuts still pointing at the old one. That works,
+# but it leaves two launchers in the folder and the user on the old screen.
+# This script is the first new code to run after such an update - both
+# launchers call it for Open App - so it tidies up here, once.
 #
-# It only touches shortcuts whose target is exactly the old launcher in THIS
-# folder, and it deletes the old launcher only when no shortcut points at it
+# It only touches shortcuts whose target is exactly an old launcher in THIS
+# folder, and it deletes an old launcher only when no shortcut points at it
 # any more. If anything fails it leaves everything as it was: the old
 # launcher still works, so the worst case is a missed tidy-up, never a
 # broken shortcut.
 function Move-ToRenamedLauncher {
   $RootDir = Split-Path -Parent $SystemDir
-  $oldHta = Join-Path $RootDir 'Free GST Billing.hta'
-  $newHta = Join-Path $RootDir 'Free GST Billing - WINDOWS.hta'
-  if (-not ((Test-Path -LiteralPath $oldHta) -and (Test-Path -LiteralPath $newHta))) { return }
-  try {
-    $wsh = New-Object -ComObject WScript.Shell
-    $icon = Join-Path $SystemDir 'app-icon.ico'
-    $dirs = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))
-    $stillOld = 0
-    foreach ($dir in $dirs) {
-      if (-not $dir -or -not (Test-Path -LiteralPath $dir)) { continue }
-      foreach ($lnk in Get-ChildItem -LiteralPath $dir -Filter '*.lnk' -File -ErrorAction SilentlyContinue) {
-        $sc = $wsh.CreateShortcut($lnk.FullName)
-        $lnkArgs = [string]$sc.Arguments
-        if ($lnkArgs.Trim('"') -ne $oldHta) { continue }
-        $sc.Arguments = '"' + $newHta + '"'
-        if (Test-Path -LiteralPath $icon) { $sc.IconLocation = "$icon,0" }
-        $sc.Save()
-        $check = $wsh.CreateShortcut($lnk.FullName)
-        if (([string]$check.Arguments).Trim('"') -eq $oldHta) { $stillOld++ }
+  $newHta = Join-Path $RootDir 'Guestora Invoice - WINDOWS.hta'
+  if (-not (Test-Path -LiteralPath $newHta)) { return }
+  foreach ($oldName in @('Free GST Billing.hta', 'Free GST Billing - WINDOWS.hta')) {
+    $oldHta = Join-Path $RootDir $oldName
+    if (-not (Test-Path -LiteralPath $oldHta)) { continue }
+    try {
+      $wsh = New-Object -ComObject WScript.Shell
+      $icon = Join-Path $SystemDir 'app-icon.ico'
+      $dirs = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))
+      $stillOld = 0
+      foreach ($dir in $dirs) {
+        if (-not $dir -or -not (Test-Path -LiteralPath $dir)) { continue }
+        foreach ($lnk in Get-ChildItem -LiteralPath $dir -Filter '*.lnk' -File -ErrorAction SilentlyContinue) {
+          $sc = $wsh.CreateShortcut($lnk.FullName)
+          $lnkArgs = [string]$sc.Arguments
+          if ($lnkArgs.Trim('"') -ne $oldHta) { continue }
+          $sc.Arguments = '"' + $newHta + '"'
+          if (Test-Path -LiteralPath $icon) { $sc.IconLocation = "$icon,0" }
+          $sc.Save()
+          $check = $wsh.CreateShortcut($lnk.FullName)
+          if (([string]$check.Arguments).Trim('"') -eq $oldHta) { $stillOld++ }
+        }
       }
+      if ($stillOld -eq 0) { Remove-Item -LiteralPath $oldHta -Force -ErrorAction Stop }
+    } catch {
+      # The old launcher may be open right now (it is often what called this),
+      # in which case Windows will not delete it. The next Open App will.
     }
-    if ($stillOld -eq 0) { Remove-Item -LiteralPath $oldHta -Force -ErrorAction Stop }
-  } catch {
-    # The old launcher may be open right now (it is often what called this),
-    # in which case Windows will not delete it. The next Open App will.
   }
 }
 Move-ToRenamedLauncher
@@ -70,7 +74,7 @@ Move-ToRenamedLauncher
 # app icons. Others (another copy, anything the user made) are left alone.
 function Move-IconsToApp {
   if ((Split-Path -Leaf $SystemDir) -ne '_system') { return }
-  $hta = Join-Path (Split-Path -Parent $SystemDir) 'Free GST Billing - WINDOWS.hta'
+  $hta = Join-Path (Split-Path -Parent $SystemDir) 'Guestora Invoice - WINDOWS.hta'
   try {
     . (Join-Path $SystemDir 'app-shortcut.ps1')
     $wsh = New-Object -ComObject WScript.Shell
@@ -87,6 +91,32 @@ function Move-IconsToApp {
 }
 Move-IconsToApp
 
+# The app was renamed from Free GST Billing to Guestora Invoice. Give this
+# install's icons the new name: only "Free GST Billing.lnk" files that open
+# THIS folder's app, and only where no "Guestora Invoice.lnk" is there yet (if
+# one is, the old icon is a duplicate and goes). Anything else is left alone.
+function Rename-OldIcons {
+  if ((Split-Path -Leaf $SystemDir) -ne '_system') { return }
+  $start = (Join-Path $SystemDir 'start-windows.ps1').ToLower()
+  try {
+    $wsh = New-Object -ComObject WScript.Shell
+    foreach ($dir in @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Startup'))) {
+      if (-not $dir) { continue }
+      $old = Join-Path $dir 'Free GST Billing.lnk'
+      if (-not (Test-Path -LiteralPath $old)) { continue }
+      if (-not ([string]$wsh.CreateShortcut($old).Arguments).ToLower().Contains($start)) { continue }
+      $new = Join-Path $dir 'Guestora Invoice.lnk'
+      if (Test-Path -LiteralPath $new) { Remove-Item -LiteralPath $old -Force -ErrorAction Stop; continue }
+      . (Join-Path $SystemDir 'app-shortcut.ps1')
+      New-AppShortcut $new $SystemDir
+      if (Test-Path -LiteralPath $new) { Remove-Item -LiteralPath $old -Force -ErrorAction Stop }
+    }
+  } catch {
+    # The old icon still opens the app; the next start tries again.
+  }
+}
+Rename-OldIcons
+
 # v1.10.75 - updating only ever ADDED files, so an install that started on an
 # older version kept launchers and scripts that no longer do anything (and
 # look like a second copy of the app). Remove them, by exact name only, and
@@ -98,7 +128,7 @@ function Remove-ObsoleteFiles {
   # own folder.
   if ((Split-Path -Leaf $SystemDir) -ne '_system') { return }
   $RootDir = Split-Path -Parent $SystemDir
-  $hta = Join-Path $RootDir 'Free GST Billing - WINDOWS.hta'
+  $hta = Join-Path $RootDir 'Guestora Invoice - WINDOWS.hta'
   if (-not (Test-Path -LiteralPath $hta)) { return }   # not the current layout: leave everything
   # Anything a shortcut still points at stays (an old Start-Menu or Startup
   # shortcut would otherwise be left pointing at nothing).
@@ -113,16 +143,19 @@ function Remove-ObsoleteFiles {
     }
   } catch { return }   # cannot tell what is still in use: leave everything
   $obsolete = @(
-    # renamed launchers (v1.10.69); the old .hta is handled above, once no shortcut uses it
-    @{ old = 'Free GST Billing.command'; now = 'Free GST Billing - MAC.command' },
-    @{ old = 'Free GST Billing.sh';      now = 'Free GST Billing - LINUX.sh' },
+    # renamed launchers (v1.10.69, then the rename to Guestora Invoice); the old
+    # .hta files are handled above, once no shortcut uses them
+    @{ old = 'Free GST Billing.command';         now = 'Guestora Invoice - MAC.command' },
+    @{ old = 'Free GST Billing.sh';              now = 'Guestora Invoice - LINUX.sh' },
+    @{ old = 'Free GST Billing - MAC.command';   now = 'Guestora Invoice - MAC.command' },
+    @{ old = 'Free GST Billing - LINUX.sh';      now = 'Guestora Invoice - LINUX.sh' },
     # batch launchers from before the one-file launcher (v1.10.44)
-    @{ old = 'Install FreeGSTBill.bat';  now = 'Free GST Billing - WINDOWS.hta' },
-    @{ old = 'Start FreeGSTBill.bat';    now = 'Free GST Billing - WINDOWS.hta' },
-    @{ old = 'Stop FreeGSTBill.bat';     now = 'Free GST Billing - WINDOWS.hta' },
-    @{ old = 'Update FreeGSTBill.bat';   now = 'Free GST Billing - WINDOWS.hta' },
-    @{ old = 'start-freegstbill.bat';    now = 'Free GST Billing - WINDOWS.hta' },
-    @{ old = 'start-server-silent.bat';  now = 'Free GST Billing - WINDOWS.hta' }
+    @{ old = 'Install FreeGSTBill.bat';  now = 'Guestora Invoice - WINDOWS.hta' },
+    @{ old = 'Start FreeGSTBill.bat';    now = 'Guestora Invoice - WINDOWS.hta' },
+    @{ old = 'Stop FreeGSTBill.bat';     now = 'Guestora Invoice - WINDOWS.hta' },
+    @{ old = 'Update FreeGSTBill.bat';   now = 'Guestora Invoice - WINDOWS.hta' },
+    @{ old = 'start-freegstbill.bat';    now = 'Guestora Invoice - WINDOWS.hta' },
+    @{ old = 'start-server-silent.bat';  now = 'Guestora Invoice - WINDOWS.hta' }
   )
   foreach ($f in $obsolete) {
     $oldPath = Join-Path $RootDir $f.old

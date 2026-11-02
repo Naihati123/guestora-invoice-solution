@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Free GST Billing</title>
+  <title>Guestora Invoice</title>
   <HTA:APPLICATION
     ID="fgstbill"
     APPLICATIONNAME="FreeGSTBillLauncher"
@@ -170,7 +170,7 @@
   <img class="mark" id="mark" alt=""
        onerror="this.style.display='none'; document.getElementById('markFb').style.display='inline-block';" />
   <div class="markFb" id="markFb">B</div>
-  <h1>Free GST Billing</h1>
+  <h1>Guestora Invoice</h1>
   <p id="tagline">Free and offline. Your invoices stay on this computer.</p>
 </div>
 
@@ -194,7 +194,7 @@
 </footer>
 
 <script>
-  // Free GST Billing - HTA Launcher (v1.10.69)
+  // Guestora Invoice - HTA Launcher (v1.10.69)
   //
   // The one file a Windows user ever double-clicks. It installs the app,
   // opens it, and updates it - so it only ever shows what makes sense now:
@@ -330,7 +330,7 @@
   }
 
   // v1.10.75 - is the app already installed in ANOTHER folder? Reported: a
-  // new ZIP extracts to a new folder (Downloads\Free-GST-Billing-v1.10.74),
+  // new ZIP extracts to a new folder (Downloads\Guestora-Invoice-v1.10.74),
   // Install there made a second, empty copy, and the shortcuts moved to it,
   // so the invoices seemed to vanish. The shortcuts the installer makes say
   // where the real install is; so does the one-command installer's folder.
@@ -345,13 +345,20 @@
     var here = ROOT.toLowerCase();
     var roots = [];
     var places = [shell.SpecialFolders('Desktop'), shell.SpecialFolders('Programs')];
-    for (var i = 0; i < places.length; i++) {
-      var lnk = places[i] + '\\Free GST Billing.lnk';
+    // "Free GST Billing" is the app's name before it was renamed: its icons
+    // and folder point at the same invoices.
+    var links = [];
+    for (var k = 0; k < places.length; k++) {
+      links.push(places[k] + '\\Guestora Invoice.lnk');
+      links.push(places[k] + '\\Free GST Billing.lnk');
+    }
+    for (var i = 0; i < links.length; i++) {
+      var lnk = links[i];
       if (!fso.FileExists(lnk)) continue;
       try {
         // v1.10.83 - the one-line install's shortcut runs
         // "...\_system\start-windows.ps1" -AppWindow, the launcher's runs
-        // "...\Free GST Billing - WINDOWS.hta": the first quoted path either way.
+        // "...\Guestora Invoice - WINDOWS.hta": the first quoted path either way.
         var args = String(shell.CreateShortcut(lnk).Arguments);
         var q = /"([^"]+)"/.exec(args);
         var target = q ? q[1] : args.replace(/^\s+|\s+$/g, '');
@@ -361,6 +368,7 @@
         if (root) roots.push(root);
       } catch (e) { }
     }
+    roots.push(shell.ExpandEnvironmentStrings('%LOCALAPPDATA%\\Programs\\Guestora Invoice'));
     roots.push(shell.ExpandEnvironmentStrings('%LOCALAPPDATA%\\Programs\\Free GST Billing'));
     for (var j = 0; j < roots.length; j++) {
       var r = roots[j];
@@ -389,7 +397,7 @@
     if (!runScript('update-windows.ps1', '-InstallTo "' + other.root + '"')) return;
     setState('Updating&hellip;',
       'A black window is updating the copy in <b>' + esc(other.root) + '</b>. When it says ' +
-      '<b>Update complete</b>, open the app from your <b>Free GST Billing</b> shortcut. Your invoices stay where they are.', 'warn');
+      '<b>Update complete</b>, open the app from your <b>Guestora Invoice</b> shortcut. Your invoices stay where they are.', 'warn');
     setPrimary(null);
     setSteps('<ol><li>Afterwards this folder is not needed. You can delete it.</li></ol>');
     setMore(null);
@@ -515,7 +523,7 @@
   // does: the same script, run from a temp copy (it deletes _system, itself
   // included), told to wait for this window to close first.
   function showRemove() {
-    setState('Remove Free GST Billing?',
+    setState('Remove Guestora Invoice?',
       'The app, its Desktop and Start-menu icons and its start-up entry are removed. ' +
       'Tick what else should go. Anything not ticked stays in <b>' + esc(SYSTEM) + '</b>.', 'warn');
     setSteps(
@@ -586,8 +594,8 @@
         setSteps(
           '<ol>' +
           '<li>Close this window.</li>' +
-          '<li>Right-click the <b>Free-GST-Billing</b> ZIP and choose <b>Extract All&hellip;</b>.</li>' +
-          '<li>Open the new folder and double-click <b>Free GST Billing - WINDOWS</b>.</li>' +
+          '<li>Right-click the <b>Guestora-Invoice</b> ZIP and choose <b>Extract All&hellip;</b>.</li>' +
+          '<li>Open the new folder and double-click <b>Guestora Invoice - WINDOWS</b>.</li>' +
           '</ol>');
         setMore([{ label: 'Download the app again', run: openGitHub }]);
         return;
@@ -607,13 +615,13 @@
       var other = findOtherInstall();
       if (other) {
         setState('Already installed on this computer',
-          'Free GST Billing is installed in <b>' + esc(other.root) + '</b>' +
+          'Guestora Invoice is installed in <b>' + esc(other.root) + '</b>' +
           (other.version ? ' (version ' + esc(other.version) + ')' : '') +
           ', with <b>' + other.invoices + '</b> invoice' + (other.invoices === 1 ? '' : 's') + '. ' +
           'Keep using that copy so all your invoices stay together. To get the newest version, update it.', 'warn');
         setPrimary('Update the installed copy', 'With the files in this folder - no download',
           function () { updateOther(other); }, true);
-        setSteps('<ol><li>When the update finishes, open the app from your <b>Free GST Billing</b> shortcut as usual.</li>' +
+        setSteps('<ol><li>When the update finishes, open the app from your <b>Guestora Invoice</b> shortcut as usual.</li>' +
           '<li>This folder is not needed after that. You can delete it.</li></ol>');
         setMore([
           { label: 'Open the installed copy', run: function () { openOther(other); } },

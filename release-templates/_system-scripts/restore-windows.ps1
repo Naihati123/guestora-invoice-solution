@@ -1,11 +1,11 @@
-# Free GST Billing - Windows restore-from-backup.
+# Guestora Invoice - Windows restore-from-backup.
 #
 # Prompts for a backup ZIP via a file-picker dialog. Snapshots
 # CURRENT data/ first as safety net, then extracts the backup ZIP
 # on top. Never destructive without a pre-restore snapshot.
 
 $ErrorActionPreference = 'Stop'
-$Host.UI.RawUI.WindowTitle = 'Free GST Billing - Restore'
+$Host.UI.RawUI.WindowTitle = 'Guestora Invoice - Restore'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $SystemDir = $ScriptDir
@@ -14,7 +14,7 @@ $dataDir = Join-Path $SystemDir 'data'
 Add-Type -AssemblyName System.Windows.Forms
 
 $dlg = New-Object System.Windows.Forms.OpenFileDialog
-$dlg.Title = 'Select a Free GST Billing backup ZIP'
+$dlg.Title = 'Select a Guestora Invoice backup ZIP'
 $dlg.Filter = 'ZIP files (*.zip)|*.zip'
 $dlg.InitialDirectory = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'FreeGSTBill Backups'
 if ($dlg.ShowDialog() -ne 'OK') {

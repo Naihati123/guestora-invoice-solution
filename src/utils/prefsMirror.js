@@ -1,7 +1,7 @@
 // v1.10.77 (#84) - settings that lived ONLY in this browser's storage are now
 // also kept in the app's data folder, and put back if the browser loses them.
 //
-// Reported: "Welcome to Free GST Billing pops up repeatedly" and "Region
+// Reported: "Welcome to Guestora Invoice pops up repeatedly" and "Region
 // Preference saved as India is back to Both/Auto after a restart". Print &
 // PDF settings (including "setup finished"), Region, Features, custom units,
 // GST "filed" marks and the income-tax inputs were stored only in the

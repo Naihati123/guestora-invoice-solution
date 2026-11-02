@@ -1,4 +1,4 @@
-# Free GST Billing - the app's Desktop / Start Menu icon (v1.10.83).
+# Guestora Invoice - the app's Desktop / Start Menu icon (v1.10.83).
 # Dot-sourced by install-windows.ps1 and start-windows.ps1. install.ps1 (the
 # one-line install) has its own copy of New-AppShortcut: keep the two alike.
 #
@@ -14,6 +14,6 @@ function New-AppShortcut([string]$path, [string]$sys) {
   $sc.WorkingDirectory = $sys
   $sc.WindowStyle = 7
   $sc.IconLocation = "$(Join-Path $sys 'app-icon.ico'),0"
-  $sc.Description = 'Free GST Billing Software'
+  $sc.Description = 'Guestora Invoice'
   $sc.Save()
 }

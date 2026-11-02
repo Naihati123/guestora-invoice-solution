@@ -31,6 +31,7 @@ import { join, resolve } from 'path';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
+import { createServer } from 'net';
 
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), '..', '..');
 const OUT_DIR = join(REPO_ROOT, 'release-build');
@@ -65,7 +66,7 @@ function extract(zipPath, dest) {
   mkdirSync(dest, { recursive: true });
   // Argument arrays, never an interpolated shell string: no shell is spawned,
   // so nothing in a path is interpreted. It also just works for paths with
-  // spaces — and this project installs to folders like "Free GST Billing".
+  // spaces — and this project installs to folders like "Guestora Invoice".
   const run = process.platform === 'win32'
     ? spawnSync('powershell', [
         '-NoProfile', '-NonInteractive', '-Command',
@@ -92,6 +93,18 @@ function findSystemDir(root) {
     }
   }
   return null;
+}
+
+/** A port nothing is listening on right now (the system picks it). */
+function freePort() {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const probe = createServer();
+    probe.on('error', rejectPromise);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolvePromise(port));
+    });
+  });
 }
 
 /** Start the packaged server and resolve with its URL once it binds. */
@@ -150,10 +163,12 @@ try {
     fail('_system/node_modules/express is missing: the ZIP does not carry its packages.');
   }
 
-  // FGSB_VERIFY_PORT: start on this port, away from a copy of the app that is
-  // already running on this machine.
+  // Start on a port of its own (FGSB_VERIFY_PORT, else a free one the system
+  // picks), never the app's usual 47371: when this machine's own copy of the
+  // app is running there, the smoke suite must not reach it - it creates and
+  // deletes invoices and changes settings, and once did so in real books.
   mkdirSync(join(systemDir, 'data'), { recursive: true });
-  if (process.env.FGSB_VERIFY_PORT) writeFileSync(join(systemDir, 'data', 'port.txt'), process.env.FGSB_VERIFY_PORT);
+  writeFileSync(join(systemDir, 'data', 'port.txt'), String(process.env.FGSB_VERIFY_PORT || await freePort()));
   log('  3/5  starting the packaged server…');
   server = await startServer(systemDir);
   log(`       bound at ${server.url}`);

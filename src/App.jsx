@@ -376,7 +376,7 @@ function App() {
   // v1.10.83 - the "Install as Desktop App" banner is gone. The browser icon
   // it made opens only a browser window: it cannot start the app's server, so
   // after a restart it showed "Needs a Quick Start". The installers' own
-  // Free GST Billing icon starts the server and opens the app.
+  // Guestora Invoice icon starts the server and opens the app.
 
   useEffect(() => {
     sessionStorage.setItem('gst_currentView', currentView);
@@ -787,13 +787,13 @@ function App() {
           <div className="server-down-steps">
             <p className="server-down-hint">How to start it:</p>
             <ol>
-              <li>Double-click the <strong>Free GST Billing</strong> icon on your Desktop (the blue <strong>B</strong>)</li>
-              <li>Or search <strong>"Free GST Billing"</strong> in the Start Menu</li>
+              <li>Double-click the <strong>Guestora Invoice</strong> icon on your Desktop (the blue <strong>G</strong>)</li>
+              <li>Or search <strong>"Guestora Invoice"</strong> in the Start Menu</li>
             </ol>
             {/* v1.10.83 - an icon made by the browser ("Install as Desktop App",
                 removed in this version) opens this window but cannot start the
                 app. Say so, or people keep clicking it. */}
-            <p className="server-down-hint">Opened this from a Chrome or Edge app icon? That icon cannot start the app. Use the Free GST Billing icon instead; you can remove the other one (right-click it, then Uninstall).</p>
+            <p className="server-down-hint">Opened this from a Chrome or Edge app icon? That icon cannot start the app. Use the Guestora Invoice icon instead; you can remove the other one (right-click it, then Uninstall).</p>
           </div>
           <p className="server-down-safe">All your invoices, clients, and data are safely stored on your computer. They are never deleted or shared.</p>
           <div className="server-down-waiting">

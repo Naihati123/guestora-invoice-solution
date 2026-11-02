@@ -1,6 +1,6 @@
 ===========================================================
-  FREE GST BILLING SOFTWARE
-  By DiceCodes - free, and yours to keep
+  GUESTORA INVOICE
+  GST billing for Guestora Solutions Private Limited
 ===========================================================
 
   Your invoices, clients and data stay on THIS computer.
@@ -46,15 +46,15 @@
 
   Double-click the one that matches your computer:
 
-    Windows ..... Free GST Billing - WINDOWS
-    Mac ......... Free GST Billing - MAC
-    Linux / NAS . Free GST Billing - LINUX
+    Windows ..... Guestora Invoice - WINDOWS
+    Mac ......... Guestora Invoice - MAC
+    Linux / NAS . Guestora Invoice - LINUX
 
   A small window opens with one button.
 
   MAC: install Node.js first (free): https://nodejs.org ->
   macOS Installer (LTS). Then hold Control, click
-  "Free GST Billing - MAC" and choose Open, then Open again.
+  "Guestora Invoice - MAC" and choose Open, then Open again.
   A Terminal window asks "Install now? [Y/n]": press Return.
 
   LINUX: see the step-by-step guide below.
@@ -91,7 +91,7 @@
   FROM NOW ON
 -----------------------------------------------------------
 
-  A "Free GST Billing" icon is put on your Desktop and in
+  A "Guestora Invoice" icon is put on your Desktop and in
   the Start menu. Click it to open the app every day: it
   starts the app and opens it in its own window.
 
@@ -162,13 +162,13 @@
   appropriate access privileges"
       Open Terminal (Applications -> Utilities), type
       chmod +x  (with a space after it), drag the file
-      "Free GST Billing - MAC" into the Terminal window,
+      "Guestora Invoice - MAC" into the Terminal window,
       press Enter, then open the file again.
 
   Mac: "cannot be opened because Apple cannot check it" /
   "unidentified developer"
       The app is not signed by Apple. Hold Control and click
-      "Free GST Billing - MAC", choose Open, then Open again.
+      "Guestora Invoice - MAC", choose Open, then Open again.
       Only the first time. (Or: System Settings -> Privacy &
       Security -> Open Anyway.)
 
@@ -202,7 +202,7 @@
       nothing? Close the black window and open the app
       again from its icon.
 
-  "Free GST Billing is already installed on this computer"
+  "Guestora Invoice is already installed on this computer"
       You extracted a new ZIP into a new folder. Your
       invoices are in the folder it names. Click "Update
       the installed copy" in the launcher, then delete the
@@ -210,7 +210,7 @@
 
   "The app cannot write to its own folder"
       Do not keep it in C:\Program Files. Move the whole
-      Free-GST-Billing folder to Documents or D:\ and open
+      Guestora-Invoice folder to Documents or D:\ and open
       it from there.
 
   "Drive ... is almost full"
@@ -223,7 +223,7 @@
 
   "Cannot connect to server" / "This site can't be
   reached" / a blank page
-      The app is not running. Click the Free GST Billing
+      The app is not running. Click the Guestora Invoice
       icon on your Desktop.
 
   The update finished but the app looks the same
@@ -239,14 +239,13 @@
       bank details) and the message you see:
       https://github.com/Naihati123/guestora-invoice-solution/issues/new?template=bug_report.yml
 
-      Fixes come in the Saturday update - one every week -
-      and anything urgent straight away.
+      Fixes come with the next update.
 
       The full guide, with every screen explained:
       https://dicecodes.com/free-gst-software-documentation/
 
 
 ===========================================================
-  This software is free and open source (MIT licence).
-  If it saves you money, tell another shop owner about it.
+  Based on Free GST Billing Software by DiceCodes
+  (MIT licence).
 ===========================================================

@@ -108,7 +108,7 @@ try {
   const why = err.code === 'ENOSPC' ? 'The disk is full. Free some space and open the app again.'
     : (err.code === 'EACCES' || err.code === 'EPERM') ? 'The app is not allowed to write to its data folder. Move the app folder to Documents (not Program Files), or allow it in your antivirus.'
       : `The data folder could not be created (${err.code || err.message}).`;
-  console.error(`\n  Free GST Billing cannot start: ${why}\n  Data folder: ${DATA_DIR}\n  Help: https://dicecodes.com/free-gst-software-documentation/troubleshooting.html#${err.code === 'ENOSPC' ? 'disk-full' : 'no-permission'}\n`);
+  console.error(`\n  Guestora Invoice cannot start: ${why}\n  Data folder: ${DATA_DIR}\n  Help: https://dicecodes.com/free-gst-software-documentation/troubleshooting.html#${err.code === 'ENOSPC' ? 'disk-full' : 'no-permission'}\n`);
   try { fs.appendFileSync(path.join(DATA_DIR, 'errors.log'), `[${new Date().toISOString()}] [startup] ${why} ${err.code || ''}\n`, 'utf-8'); } catch { /* the folder is the problem */ }
   process.exit(1);
 }
@@ -2072,7 +2072,7 @@ app.get('{*path}', (req, res) => {
 function servePlaceholder(req, res) {
     if (req.path.startsWith('/api')) return res.status(404).json({ error: 'No such endpoint' });
     res.status(503).send(`<!doctype html>
-<html><head><meta charset="utf-8"><title>Free GST Billing Software — building…</title>
+<html><head><meta charset="utf-8"><title>Guestora Invoice — building…</title>
 <meta http-equiv="refresh" content="3">
 <style>
   body { font-family: -apple-system, Segoe UI, Inter, sans-serif; max-width: 560px;
@@ -2087,7 +2087,7 @@ function servePlaceholder(req, res) {
   .box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.85rem 1rem; border-radius: 8px; margin-top: 1rem; }
 </style></head>
 <body>
-  <h1>Free GST Billing Software</h1>
+  <h1>Guestora Invoice</h1>
   <p><span class="spinner"></span> The app is still building. This page refreshes every 3 seconds.</p>
   <div class="box">
     <p style="margin:0 0 0.5rem"><strong>Local install?</strong></p>
@@ -2176,14 +2176,19 @@ process.on('unhandledRejection', (err) => { console.error(`  Unexpected error (t
 // every byte stays on the user's machine, which the privacy promise depends on.
 let activeServer = null;
 function startServer(port) {
-  const server = app.listen(port, '127.0.0.1', () => {
+  const server = app.listen(port, '127.0.0.1', (err) => {
+    // Express 5 calls this when listening FAILED too, with the error (the
+    // 'error' handler below deals with it). Without this check a busy port was
+    // announced as "running at" that port - another program's - and written
+    // to port.txt, so launchers and the release check opened the wrong app.
+    if (err) return;
     activeServer = server;
     // Persist the chosen port — the .bat launcher reads this for the browser URL.
     // Writing on EVERY successful boot means: if our preferred 47371 was busy and
     // we landed on 47372 instead, next launch tries 47372 first (cuts collision
     // scans in half on repeated reboots of whatever was holding 47371).
     try { fs.writeFileSync(PORT_FILE, String(port), 'utf-8'); } catch { /* ignore */ }
-    console.log(`\n  Free GST Billing Software running at http://localhost:${port}`);
+    console.log(`\n  Guestora Invoice running at http://localhost:${port}`);
     console.log(`  Data stored in: ${DATA_DIR}\n`);
   });
   server.on('error', (err) => {

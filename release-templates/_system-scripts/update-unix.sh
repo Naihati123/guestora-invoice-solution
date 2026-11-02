@@ -1,5 +1,5 @@
 #!/bin/sh
-# Free GST Billing - Linux / macOS / NAS updater.
+# Guestora Invoice - Linux / macOS / NAS updater.
 #
 # The Unix counterpart of update-windows.ps1, run by the Control Panel's
 # "Update Now" button. Before v1.10.66 there was no Unix updater at all, so on
@@ -50,7 +50,7 @@ FROM=unknown
 
 say ''
 say '============================================================'
-say ' Free GST Billing Software - Update'
+say ' Guestora Invoice - Update'
 say '============================================================'
 say ''
 
@@ -141,7 +141,7 @@ const agent = { 'User-Agent': 'FreeGSTBill-Updater' };
   if (!rel.ok) throw new Error(`GitHub answered ${rel.status}.`);
   const info = await rel.json();
   const assets = info.assets || [];
-  const asset = assets.find((a) => /^Free-GST-Billing-v.+\.zip$/i.test(a.name)) || assets.find((a) => /\.zip$/i.test(a.name));
+  const asset = assets.find((a) => /^Guestora-Invoice-v.+\.zip$/i.test(a.name)) || assets.find((a) => /\.zip$/i.test(a.name));
   if (!asset) throw new Error(`Release ${info.tag_name} has no ZIP attached yet. Try again later.`);
   console.log(`  Latest release: ${info.tag_name}`);
   const res = await fetch(asset.browser_download_url, { headers: agent });
@@ -295,7 +295,7 @@ for launcher in "$NEW_ROOT"/*.sh "$NEW_ROOT"/*.command "$NEW_ROOT"/*.hta; do
 done
 # ...and launchers an older version had that this one no longer ships.
 if [ -n "$SHIPPED" ]; then
-  for f in "$ROOT_DIR"/'Free GST Billing - '* "$ROOT_DIR/READ ME FIRST.txt"; do
+  for f in "$ROOT_DIR"/'Guestora Invoice - '* "$ROOT_DIR"/'Free GST Billing - '* "$ROOT_DIR/READ ME FIRST.txt"; do
     [ -f "$f" ] || continue
     [ -e "$NEW_ROOT/$(basename "$f")" ] || rm -f "$f"
   done

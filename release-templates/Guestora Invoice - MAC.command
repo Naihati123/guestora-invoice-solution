@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
-# Free GST Billing — Linux launcher.
+# Guestora Invoice — macOS launcher.
 #
-# Mark this executable once (chmod +x) and either double-click in
-# most file managers (Nautilus, Dolphin, Nemo — prompt to run) or
-# run from a terminal: `./Free\ GST\ Billing.sh`
+# Double-click in Finder → macOS opens this in Terminal.app. We
+# detect state (Node? installed?) and offer a minimal menu, then
+# hand off to the underlying script. All the "fancy UI" (Update /
+# Backup / Restore / Move / Uninstall buttons) lives INSIDE the
+# app at http://localhost:47371/control-panel once the server is
+# running — this launcher is just the front door.
 #
-# Same design as the .command variant for macOS: detect state,
-# offer a minimal menu, hand off to _system/*.sh. All post-install
-# actions live in the in-app Control Panel at
-# http://localhost:47371/control-panel.
+# Design decisions:
+#   * Uses pure bash + curl — no jq, no python, nothing to install
+#   * Same script works on Linux (see .sh variant) with different
+#     Node install instructions
+#   * Never destructive — user always confirms before install runs
 
 set -e
 
+# Resolve the folder this launcher lives in, cd there.
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 SYSTEM_DIR="$SCRIPT_DIR/_system"
@@ -21,40 +26,43 @@ if [ -x "$SYSTEM_DIR/node/bin/node" ]; then export PATH="$SYSTEM_DIR/node/bin:$P
 clear
 echo
 echo "  ┌────────────────────────────────────────────────┐"
-echo "  │   Free GST Billing Software                    │"
+echo "  │   Guestora Invoice                    │"
 echo "  │   Open-source · Offline-first · No signup      │"
 echo "  └────────────────────────────────────────────────┘"
 echo
 
+# --- Sanity checks ---
 if [ ! -d "$SYSTEM_DIR" ]; then
   echo "  ⚠  _system folder is missing."
   echo "     Please re-extract the ZIP or re-download from GitHub."
   echo
-  read -rp "  Press Enter to exit… "
+  read -p "  Press Enter to exit… "
   exit 1
 fi
 
 if ! command -v node >/dev/null 2>&1; then
   echo "  ⚠  Node.js is not installed."
   echo
-  echo "  Install it, then re-run this launcher:"
-  echo "    · Debian/Ubuntu:   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install nodejs"
-  echo "    · Fedora:          sudo dnf install nodejs npm"
-  echo "    · Arch:            sudo pacman -S nodejs npm"
-  echo "    · nvm (any distro): https://github.com/nvm-sh/nvm"
+  echo "  Install it one of these ways, then re-run this launcher:"
+  echo "    · Homebrew:      brew install node@20"
+  echo "    · Official pkg:  https://nodejs.org/en/download"
   echo
+  read -p "  Open the Node.js download page now? [y/N] " ans
+  if [[ "$ans" =~ ^[Yy]$ ]]; then open "https://nodejs.org/en/download"; fi
   exit 1
 fi
 
+# --- Install if node_modules missing ---
 if [ ! -d "$SYSTEM_DIR/node_modules" ]; then
   echo "  ℹ  App dependencies not installed yet."
   echo "     This will run: npm install  (2–3 minutes, one-time)"
   echo
-  read -rp "  Install now? [Y/n] " ans
+  read -p "  Install now? [Y/n] " ans
   if [[ "$ans" =~ ^[Nn]$ ]]; then exit 0; fi
   bash "$SYSTEM_DIR/install-unix.sh"
 fi
 
+# --- Start server + open browser ---
 echo
 echo "  ✅ Starting server…"
 bash "$SYSTEM_DIR/start-unix.sh"

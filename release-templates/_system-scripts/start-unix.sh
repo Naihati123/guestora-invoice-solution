@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Free GST Billing — Unix start-server + open-browser.
+# Guestora Invoice — Unix start-server + open-browser.
 set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SYSTEM_DIR="$SCRIPT_DIR"
@@ -8,12 +8,16 @@ ROOT_DIR="$( dirname "$SYSTEM_DIR" )"
 # v1.10.75 - updates only ever added files, so installs from before v1.10.69
 # kept launchers under their old names, which look like a second copy of the
 # app. Remove them by exact name, only once the renamed launcher is present.
+# The rename from Free GST Billing to Guestora Invoice left launchers the same way.
 remove_if_replaced() { # old new
   if [ -f "$ROOT_DIR/$1" ] && [ -f "$ROOT_DIR/$2" ]; then rm -f "$ROOT_DIR/$1" 2>/dev/null || true; fi
 }
-remove_if_replaced "Free GST Billing.command" "Free GST Billing - MAC.command"
-remove_if_replaced "Free GST Billing.sh"      "Free GST Billing - LINUX.sh"
-remove_if_replaced "Free GST Billing.hta"     "Free GST Billing - WINDOWS.hta"
+remove_if_replaced "Free GST Billing.command"         "Guestora Invoice - MAC.command"
+remove_if_replaced "Free GST Billing.sh"              "Guestora Invoice - LINUX.sh"
+remove_if_replaced "Free GST Billing.hta"             "Guestora Invoice - WINDOWS.hta"
+remove_if_replaced "Free GST Billing - MAC.command"   "Guestora Invoice - MAC.command"
+remove_if_replaced "Free GST Billing - LINUX.sh"      "Guestora Invoice - LINUX.sh"
+remove_if_replaced "Free GST Billing - WINDOWS.hta"   "Guestora Invoice - WINDOWS.hta"
 
 # Resolve port from persisted file if present.
 PORT=47371

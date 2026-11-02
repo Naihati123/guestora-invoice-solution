@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Free GST Billing — Unix (macOS + Linux) installer.
+# Guestora Invoice — Unix (macOS + Linux) installer.
 #
 # Assumes Node.js is already installed (parent launcher checks and
 # instructs the user if not — installing Node on Unix is too

@@ -51,20 +51,20 @@ const top = /^## \[([^\]]+)\] - (.+)$/m.exec(changelog);
 check('CHANGELOG starts with this version', top && top[1] === version, `The first entry is ${top ? top[1] : 'missing'}; add "## [${version}] - YYYY-MM-DD" at the top.`);
 check('...and it is dated (not "unreleased")', top && /^\d{4}-\d{2}-\d{2}$/.test(top[2].trim()), `Replace "${top?.[2]}" with today's date.`);
 const entry = top ? changelog.slice(top.index, changelog.indexOf('\n---\n', top.index)) : '';
-check('...with a "How to update" block (RELEASE_CHECKLIST)', /### How to update/.test(entry) && new RegExp(`New version:\\*\\*\\s*${version.replace(/\./g, '\\.')}`).test(entry) && /Free-GST-Billing\.zip/.test(entry),
-  'Copy the How to update block from docs/RELEASE_CHECKLIST.md: current → new version, the Update button, and the manual Free-GST-Billing.zip steps.');
+check('...with a "How to update" block (RELEASE_CHECKLIST)', /### How to update/.test(entry) && new RegExp(`New version:\\*\\*\\s*${version.replace(/\./g, '\\.')}`).test(entry) && /Guestora-Invoice\.zip/.test(entry),
+  'Copy the How to update block from docs/RELEASE_CHECKLIST.md: current → new version, the Update button, and the manual Guestora-Invoice.zip steps.');
 
 console.log('\nRelease ZIP');
-const appZip = join(ROOT, 'release-build', `Free-GST-Billing-v${version}.zip`);
+const appZip = join(ROOT, 'release-build', `Guestora-Invoice-v${version}.zip`);
 if (!existsSync(appZip)) bad('release-build ZIP exists', `Run npm run release:zip (it builds ${appZip}).`);
 else {
   const e = zipEntries(appZip);
   check('ZIP is readable', !!e, 'The ZIP central directory is corrupt; rebuild it.');
   if (e) {
     check('every path uses "/" (ERR-014, ERR-061)', !e.some((x) => x.name.includes('\\')), 'Backslash paths unpack as flat files on Linux / Mac. Build with npm run release:zip, never Compress-Archive.');
-    check('server.js is at Free-GST-Billing/_system/', e.some((x) => x.name === 'Free-GST-Billing/_system/server.js'), 'The layout is wrong; the launchers will not find the app.');
-    for (const l of ['Free GST Billing - WINDOWS.hta', 'Free GST Billing - MAC.command', 'Free GST Billing - LINUX.sh', 'READ ME FIRST.txt']) {
-      check(`${l} is in the ZIP`, e.some((x) => x.name === `Free-GST-Billing/${l}`), `${l} is missing from the ZIP.`);
+    check('server.js is at Guestora-Invoice/_system/', e.some((x) => x.name === 'Guestora-Invoice/_system/server.js'), 'The layout is wrong; the launchers will not find the app.');
+    for (const l of ['Guestora Invoice - WINDOWS.hta', 'Guestora Invoice - MAC.command', 'Guestora Invoice - LINUX.sh', 'READ ME FIRST.txt']) {
+      check(`${l} is in the ZIP`, e.some((x) => x.name === `Guestora-Invoice/${l}`), `${l} is missing from the ZIP.`);
     }
     const scripts = e.filter((x) => /\.(command|sh)$/.test(x.name));
     check(`all ${scripts.length} .command / .sh files are executable (ERR-062, #120)`, scripts.length > 0 && scripts.every((x) => x.mode & 0o111),
@@ -72,7 +72,7 @@ else {
     const ps1 = e.filter((x) => x.name.endsWith('.ps1')).map((x) => x.name.split('/').pop());
     check('ensure-node.ps1 ships with the scripts that use it (#109)', ps1.includes('ensure-node.ps1') && e.some((x) => x.name.endsWith('/check-node.sh')), 'ensure-node.ps1 / check-node.sh missing: install, update and start would fail.');
     // v1.10.83 - the packages ship inside the ZIP: no user's PC runs npm.
-    check('node_modules ships inside the ZIP (no npm install on users\' PCs)', e.some((x) => x.name === 'Free-GST-Billing/_system/node_modules/express/package.json'),
+    check('node_modules ships inside the ZIP (no npm install on users\' PCs)', e.some((x) => x.name === 'Guestora-Invoice/_system/node_modules/express/package.json'),
       '_system/node_modules/express is missing. Build with npm run release:zip (it runs npm ci in the staging folder).');
     check('ZIP size looks right (12-60 MB; the server packages only)', statSync(appZip).size > 1.2e7 && statSync(appZip).size < 6e7, `It is ${(statSync(appZip).size / 1e6).toFixed(1)} MB.`);
   }
@@ -91,7 +91,7 @@ console.log('\nScripts that users run');
 const tdir = join(ROOT, 'release-templates', '_system-scripts');
 const nonAscii = readdirSync(tdir).filter((f) => f.endsWith('.ps1') && /[^\x00-\x7F]/.test(readFileSync(join(tdir, f), 'latin1')));
 check('every .ps1 is plain ASCII (ERR-001: Windows PowerShell misreads it)', !nonAscii.length, `Non-ASCII in ${nonAscii.join(', ')}.`);
-const unixScripts = [...readdirSync(tdir).filter((f) => f.endsWith('.sh')).map((f) => join(tdir, f)), join(ROOT, 'release-templates', 'Free GST Billing - MAC.command'), join(ROOT, 'release-templates', 'Free GST Billing - LINUX.sh'), join(ROOT, 'install.sh')];
+const unixScripts = [...readdirSync(tdir).filter((f) => f.endsWith('.sh')).map((f) => join(tdir, f)), join(ROOT, 'release-templates', 'Guestora Invoice - MAC.command'), join(ROOT, 'release-templates', 'Guestora Invoice - LINUX.sh'), join(ROOT, 'install.sh')];
 const crlf = unixScripts.filter((f) => readFileSync(f, 'latin1').includes('\r'));
 check('every .sh / .command uses LF line endings (ERR-014)', !crlf.length, `CRLF in ${crlf.join(', ')}.`);
 check('READ ME FIRST.txt is plain ASCII', !/[^\x00-\x7F]/.test(read('release-templates/READ ME FIRST.txt')), 'Notepad on some PCs garbles other characters.');
@@ -99,7 +99,7 @@ check('READ ME FIRST.txt is plain ASCII', !/[^\x00-\x7F]/.test(read('release-tem
 // Errors users reported, each with the cheapest check that would catch it
 // coming back (the 30 Oct 2026 guard audit of docs/KNOWN_ERRORS.md).
 console.log('\nErrors users reported stay fixed');
-const hta = read('release-templates/Free GST Billing - WINDOWS.hta');
+const hta = read('release-templates/Guestora Invoice - WINDOWS.hta');
 check('ERR-002 the launcher says UTF-8 and is plain ASCII', /charset=utf-8/i.test(hta) && !/[^\x00-\x7F]/.test(hta), 'Its text turns into garbage on Indian-locale Windows.');
 check('ERR-017 the launcher spots being run from inside the ZIP', hta.includes("'\\\\appdata\\\\local\\\\temp\\\\'"), 'Run from the ZIP it said "_system missing" instead of "extract first".');
 const csp = (/http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(read('src/index.html')) || [])[1] || '';

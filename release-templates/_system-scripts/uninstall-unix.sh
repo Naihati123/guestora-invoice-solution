@@ -1,5 +1,5 @@
 #!/bin/sh
-# Free GST Billing - remove the app (Control Panel -> Remove the app).
+# Guestora Invoice - remove the app (Control Panel -> Remove the app).
 #
 # The server starts this from a temp copy and exits; this waits for it, then
 # deletes. Arguments: <_system folder> <server pid> [data] [pdfs] [backups].
@@ -21,12 +21,14 @@ i=0
 while [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null && [ $i -lt 20 ]; do sleep 1; i=$((i + 1)); done
 
 # Icons the install line made, only if they open this copy.
-for f in "$HOME/Applications/Free GST Billing.app/Contents/MacOS/launch" \
+# (Free GST Billing.app is the Mac icon from before the app was renamed.)
+for f in "$HOME/Applications/Guestora Invoice.app/Contents/MacOS/launch" \
+         "$HOME/Applications/Free GST Billing.app/Contents/MacOS/launch" \
          "$HOME/Library/LaunchAgents/com.dicecodes.freegstbilling.plist" \
          "${XDG_DATA_HOME:-$HOME/.local/share}/applications/free-gst-billing.desktop" \
          "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/free-gst-billing.desktop"; do
   grep -qsF "$SYS" "$f" || continue
-  case $f in */MacOS/launch) rm -rf "$HOME/Applications/Free GST Billing.app" ;; *) rm -f "$f" ;; esac
+  case $f in */MacOS/launch) rm -rf "${f%/Contents/MacOS/launch}" ;; *) rm -f "$f" ;; esac
 done
 
 # Data deleted but backups kept: one last copy first. If that copy fails the
@@ -46,7 +48,7 @@ for entry in "$SYS"/* "$SYS"/.[!.]*; do
   rm -rf "$entry"
 done
 # Only the app's own files beside _system; anything else there is the user's.
-for entry in "$ROOT"/'Free GST Billing - '* "$ROOT/READ ME FIRST.txt"; do
+for entry in "$ROOT"/'Guestora Invoice - '* "$ROOT"/'Free GST Billing - '* "$ROOT/READ ME FIRST.txt"; do
   [ -e "$entry" ] && rm -rf "$entry"
 done
 rmdir "$SYS" 2>/dev/null

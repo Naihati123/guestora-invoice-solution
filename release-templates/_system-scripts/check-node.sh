@@ -1,4 +1,4 @@
-# Free GST Billing - is the Node.js on this machine new enough? (POSIX sh)
+# Guestora Invoice - is the Node.js on this machine new enough? (POSIX sh)
 #
 # Sourced by install-unix.sh, start-unix.sh and update-unix.sh:
 #   . "$SYSTEM_DIR/check-node.sh"; node_ok || exit 1
@@ -22,7 +22,7 @@ _major() { printf '%s' "$1" | sed 's/^v//' | cut -d. -f1 | tr -cd '0-9'; }
 
 _node_help() {
   printf '  %s\n' "$1" \
-    "Free GST Billing needs Node.js $MIN_NODE_MAJOR or newer, with npm $MIN_NPM_MAJOR or newer." \
+    "Guestora Invoice needs Node.js $MIN_NODE_MAJOR or newer, with npm $MIN_NPM_MAJOR or newer." \
     'Install or update it, then open the app again:'
   if [ "$(uname -s 2>/dev/null)" = Darwin ]; then
     printf '    %s\n' 'Homebrew:      brew install node@20' \

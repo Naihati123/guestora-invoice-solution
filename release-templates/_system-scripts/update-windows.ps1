@@ -1,4 +1,4 @@
-# Free GST Billing - Windows updater.
+# Guestora Invoice - Windows updater.
 #
 # Pulls the latest release ZIP from GitHub, extracts _system/ over
 # the existing one, re-runs npm install. Data folder is preserved.
@@ -19,7 +19,7 @@
 param([string]$InstallTo = '')
 
 $ErrorActionPreference = 'Stop'
-$Host.UI.RawUI.WindowTitle = 'Free GST Billing - Update'
+$Host.UI.RawUI.WindowTitle = 'Guestora Invoice - Update'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $SystemDir = $ScriptDir
@@ -38,7 +38,7 @@ if ($InstallTo) {
 
 Write-Host ''
 Write-Host '  ============================================================'
-Write-Host '   Free GST Billing Software - Update'
+Write-Host '   Guestora Invoice - Update'
 Write-Host '  ============================================================'
 Write-Host ''
 
@@ -93,7 +93,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $tmp)
 
 # The extract may contain either the pretty release structure
-# (root has Free GST Billing - WINDOWS.hta + _system/) or the source zipball
+# (root has Guestora Invoice - WINDOWS.hta + _system/) or the source zipball
 # (root has Naihati123-guestora-invoice-solution-HASH/).
 $extracted = Get-ChildItem -Path $tmp -Directory | Select-Object -First 1
 $candidateSystem = Join-Path $extracted.FullName '_system'
@@ -123,7 +123,7 @@ Get-ChildItem -Path $newSystem -Force | Where-Object { $keep -notcontains $_.Nam
   Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
 }
 # If the new release ships new launcher/HTA files at root, refresh those too
-Get-ChildItem -Path $sourceRoot -File | Where-Object { $_.Extension -match '\.(hta|command|sh)$' -or $_.Name -match '^Free GST Billing' } | ForEach-Object {
+Get-ChildItem -Path $sourceRoot -File | Where-Object { $_.Extension -match '\.(hta|command|sh)$' -or $_.Name -match '^Guestora Invoice' } | ForEach-Object {
   Copy-Item -Path $_.FullName -Destination (Join-Path $RootDir $_.Name) -Force
 }
 # v1.10.83 - a clean update: files an older version had and this one does not
@@ -137,7 +137,7 @@ if ($shipped) {
   } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
   $rootNames = @(Get-ChildItem -Path $sourceRoot -File | ForEach-Object { $_.Name })
   Get-ChildItem -Path $RootDir -File | Where-Object {
-    ($_.Name -like 'Free GST Billing - *' -or $_.Name -eq 'READ ME FIRST.txt') -and $rootNames -notcontains $_.Name
+    ($_.Name -like 'Guestora Invoice - *' -or ($_.Name -like 'Free GST Billing - *' -and $_.Extension -ne '.hta') -or $_.Name -eq 'READ ME FIRST.txt') -and $rootNames -notcontains $_.Name
   } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
 }
 

@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(ROOT, 'release-build');
-const zips = readdirSync(out).filter((f) => /^Free-GST-Billing.*\.zip$/.test(f))
+const zips = readdirSync(out).filter((f) => /^Guestora-Invoice.*\.zip$/.test(f))
   .map((f) => join(out, f)).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
 if (!zips.length) { console.error('No release ZIP in release-build/. Run npm run release:zip first.'); process.exit(1); }
 const version = (name) => JSON.parse(readFileSync(join(ROOT, 'node_modules', name, 'package.json'), 'utf8')).version;
@@ -29,8 +29,8 @@ try { execFileSync('docker', ['version'], { stdio: 'ignore' }); } catch {
 const inner = [
   'set -e',
   'apt-get update -qq >/dev/null && apt-get install -y -qq unzip >/dev/null',
-  'mkdir -p /app && cd /app && unzip -q /in/app.zip && cd /app/Free-GST-Billing',
-  'chmod +x "Free GST Billing - LINUX.sh" _system/*.sh',
+  'mkdir -p /app && cd /app && unzip -q /in/app.zip && cd /app/Guestora-Invoice',
+  'chmod +x "Guestora Invoice - LINUX.sh" _system/*.sh',
   'mkdir -p _system/data && echo 47431 > _system/data/port.txt',
   'echo "  Node $(node -v), starting the app with its own start script..."',
   'FREEGSTBILL_TEST=1 sh _system/open-app.sh',

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Free GST Billing - open the app in its own window (macOS and Linux).
+# Guestora Invoice - open the app in its own window (macOS and Linux).
 #
 # v1.10.83 - what the one-line install's icons run: the Mac app, the Linux
 # menu entry and "start with the computer". Starts the server if it is not
@@ -27,9 +27,9 @@ read_port() {
 read_port
 
 problem() {
-  msg="Free GST Billing could not start: $1 To repair it, run the install line again (https://dicecodes.com/free-gst-software-documentation/install.html)."
+  msg="Guestora Invoice could not start: $1 To repair it, run the install line again (https://dicecodes.com/free-gst-software-documentation/install.html)."
   if [ "$(uname -s)" = Darwin ] && [ -z "${FREEGSTBILL_TEST:-}" ]; then
-    osascript -e "display alert \"Free GST Billing\" message \"$msg\"" >/dev/null 2>&1
+    osascript -e "display alert \"Guestora Invoice\" message \"$msg\"" >/dev/null 2>&1
   fi
   printf '  %s\n' "$msg" >&2
   exit 1
@@ -44,7 +44,7 @@ node -e 'process.exit(+process.versions.node.split(".")[0] >= 18 ? 0 : 1)' || pr
 
 if ! up; then
   [ -f "$SYS/node_modules/express/package.json" ] || problem 'some of its files are missing.'
-  printf '  Starting Free GST Billing...\n'
+  printf '  Starting Guestora Invoice...\n'
   (cd "$SYS" && nohup node "$SYS/server.js" >/dev/null 2>&1 &)
   # The first start after an install is the slow one (90s, as on Windows).
   i=0

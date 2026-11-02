@@ -1,4 +1,4 @@
-# Free GST Billing - one-line install, update and repair for Windows.
+# Guestora Invoice - one-line install, update and repair for Windows.
 #
 #   Press Windows + R, paste this line, press Enter:
 #   powershell -ExecutionPolicy Bypass -c "[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/Naihati123/guestora-invoice-solution/main/install.ps1 | iex"
@@ -33,7 +33,7 @@ $ProgressPreference = 'SilentlyContinue'
 # PowerShell 5.1 may still default to TLS 1.0, which GitHub refuses.
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$ZipUrl = 'https://github.com/Naihati123/guestora-invoice-solution/releases/latest/download/Free-GST-Billing.zip'
+$ZipUrl = 'https://github.com/Naihati123/guestora-invoice-solution/releases/latest/download/Guestora-Invoice.zip'
 $Test = $env:FREEGSTBILL_TEST
 $NeedFreeMB = 600   # the ZIP, its unpacked copy, Node.js, and room to spare
 $script:KnownProblem = $false
@@ -60,8 +60,8 @@ function Get-IconFolders {
   return @{ Desktop = [Environment]::GetFolderPath('Desktop'); Programs = [Environment]::GetFolderPath('Programs'); Startup = [Environment]::GetFolderPath('Startup') }
 }
 
-# The app folder a "Free GST Billing" shortcut opens. The launcher's runs
-# "...\Free GST Billing - WINDOWS.hta", this installer's runs
+# The app folder a "Guestora Invoice" shortcut opens. The launcher's runs
+# "...\Guestora Invoice - WINDOWS.hta", this installer's runs
 # "...\_system\start-windows.ps1": the first quoted path either way.
 function Get-LinkRoot([string]$lnk) {
   $a = [string](New-Object -ComObject WScript.Shell).CreateShortcut($lnk).Arguments
@@ -78,16 +78,22 @@ function Get-LinkRoot([string]$lnk) {
 function Find-Install {
   if ($env:FREEGSTBILL_DIR) { return $env:FREEGSTBILL_DIR.TrimEnd('\') }
   $f = Get-IconFolders
-  foreach ($dir in @($f.Desktop, $f.Programs)) {
-    # One unreadable shortcut must not stop the other being checked.
-    try {
-      $lnk = Join-Path $dir 'Free GST Billing.lnk'
-      if (-not (Test-Path -LiteralPath $lnk)) { continue }
-      $r = Get-LinkRoot $lnk
-      if ($r -and (Test-Path -LiteralPath (Join-Path $r '_system\server.js'))) { return $r }
-    } catch { }
+  # "Free GST Billing" is the app's name before it was renamed: an install
+  # made then is updated where it is, with its invoices.
+  foreach ($name in @('Guestora Invoice.lnk', 'Free GST Billing.lnk')) {
+    foreach ($dir in @($f.Desktop, $f.Programs)) {
+      # One unreadable shortcut must not stop the other being checked.
+      try {
+        $lnk = Join-Path $dir $name
+        if (-not (Test-Path -LiteralPath $lnk)) { continue }
+        $r = Get-LinkRoot $lnk
+        if ($r -and (Test-Path -LiteralPath (Join-Path $r '_system\server.js'))) { return $r }
+      } catch { }
+    }
   }
-  return (Join-Path $env:LOCALAPPDATA 'Programs\Free GST Billing')
+  $old = Join-Path $env:LOCALAPPDATA 'Programs\Free GST Billing'
+  if (Test-Path -LiteralPath (Join-Path $old '_system\server.js')) { return $old }
+  return (Join-Path $env:LOCALAPPDATA 'Programs\Guestora Invoice')
 }
 
 function Test-Writable([string]$dir) {
@@ -195,25 +201,25 @@ function New-AppShortcut([string]$path, [string]$sys) {
   $sc.WorkingDirectory = $sys
   $sc.WindowStyle = 7
   $sc.IconLocation = "$(Join-Path $sys 'app-icon.ico'),0"
-  $sc.Description = 'Free GST Billing Software'
+  $sc.Description = 'Guestora Invoice'
   $sc.Save()
 }
 
 function Install-App {
   Write-Host ''
-  Write-Host '  Free GST Billing - install or update'
+  Write-Host '  Guestora Invoice - install or update'
   Write-Host ''
 
   # --- [1/4] -----------------------------------------------------------------
   Step '[1/4] Checking this computer'
   if ([Environment]::OSVersion.Version.Major -lt 10) {
-    Fail 'This computer runs an old Windows.' 'Free GST Billing needs Windows 10 or 11 (Node.js no longer runs on Windows 7 or 8).'
+    Fail 'This computer runs an old Windows.' 'Guestora Invoice needs Windows 10 or 11 (Node.js no longer runs on Windows 7 or 8).'
   }
   $dest = Find-Install
   $sys = Join-Path $dest '_system'
   $isUpdate = Test-Path -LiteralPath (Join-Path $sys 'server.js')
   if (-not (Test-Writable $dest)) {
-    Fail "This folder cannot be written to: $dest" 'Close any program using it, or choose another folder: $env:FREEGSTBILL_DIR = ''D:\Free GST Billing'' and run the line again.'
+    Fail "This folder cannot be written to: $dest" 'Close any program using it, or choose another folder: $env:FREEGSTBILL_DIR = ''D:\Guestora Invoice'' and run the line again.'
   }
   $free = Get-FreeMB $dest
   if ($free -lt $NeedFreeMB) {
@@ -225,7 +231,7 @@ function Install-App {
   # Left over by an install that was interrupted.
   Get-ChildItem -LiteralPath $dest -Directory -Force -Filter '.install-tmp-*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
   Ok
-  if ($isUpdate) { Write-Host "        Found Free GST Billing in $dest - updating it. Your data stays as it is." }
+  if ($isUpdate) { Write-Host "        Found Guestora Invoice in $dest - updating it. Your data stays as it is." }
 
   # --- [2/4] -----------------------------------------------------------------
   # Unpacked inside the app folder itself: the same drive, so the files can be
@@ -233,7 +239,7 @@ function Install-App {
   $tmp = Join-Path $dest ".install-tmp-$([Guid]::NewGuid().ToString('N').Substring(0, 4))"
   New-Item -ItemType Directory -Path $tmp -Force | Out-Null
   try {
-    $zip = Join-Path $tmp 'Free-GST-Billing.zip'
+    $zip = Join-Path $tmp 'Guestora-Invoice.zip'
     if ($env:FREEGSTBILL_ZIP) {
       Step '[2/4] Using the package on this computer'
       Copy-Item -LiteralPath $env:FREEGSTBILL_ZIP -Destination $zip
@@ -250,13 +256,13 @@ function Install-App {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     try { [IO.Compression.ZipFile]::ExtractToDirectory($zip, $unpacked) } catch {
       if ($_.Exception.InnerException -is [IO.PathTooLongException] -or $_.Exception -is [IO.PathTooLongException]) {
-        Fail "The folder path is too long for Windows: $dest" 'Install to a shorter one: run $env:FREEGSTBILL_DIR = ''C:\Free GST Billing'' in PowerShell, then the install line there.'
+        Fail "The folder path is too long for Windows: $dest" 'Install to a shorter one: run $env:FREEGSTBILL_DIR = ''C:\Guestora Invoice'' in PowerShell, then the install line there.'
       }
       Fail 'The downloaded file could not be unpacked (damaged download, or the disk is full).' 'Run the same line again.'
     }
     $inner = Get-ChildItem -LiteralPath $unpacked -Directory | Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '_system\server.js') } | Select-Object -First 1
     if (-not $inner -or -not (Test-Path -LiteralPath (Join-Path $inner.FullName '_system\node_modules\express\package.json'))) {
-      Fail 'The downloaded file is not a complete Free GST Billing package.' 'Run the same line again. If it happens again, report it: https://github.com/Naihati123/guestora-invoice-solution/issues'
+      Fail 'The downloaded file is not a complete Guestora Invoice package.' 'Run the same line again. If it happens again, report it: https://github.com/Naihati123/guestora-invoice-solution/issues'
     }
     $newSys = Join-Path $inner.FullName '_system'
     $backup = if ($isUpdate) { Backup-Data $sys } else { $null }
@@ -281,7 +287,7 @@ function Install-App {
     } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
     $rootNames = @(Get-ChildItem -LiteralPath $inner.FullName -File -Force | ForEach-Object { $_.Name })
     Get-ChildItem -LiteralPath $dest -File -Force | Where-Object {
-      ($_.Name -like 'Free GST Billing - *' -or $_.Name -eq 'READ ME FIRST.txt') -and $rootNames -notcontains $_.Name
+      ($_.Name -like 'Guestora Invoice - *' -or ($_.Name -like 'Free GST Billing - *' -and $_.Extension -ne '.hta') -or $_.Name -eq 'READ ME FIRST.txt') -and $rootNames -notcontains $_.Name
     } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     foreach ($f in Get-ChildItem -LiteralPath $inner.FullName -File -Force) {
       Copy-Item -LiteralPath $f.FullName -Destination (Join-Path $dest $f.Name) -Force
@@ -311,22 +317,36 @@ function Install-App {
   # --- [4/4] -----------------------------------------------------------------
   Step '[4/4] Adding icons'
   $f = Get-IconFolders
+  # Icons from before the rename to Guestora Invoice that open THIS install are
+  # replaced by the new ones (the Startup one too, if it was there), so the
+  # computer never shows two icons for one app.
+  $hadStartup = $false
+  foreach ($d in @($f.Desktop, $f.Programs, $f.Startup)) {
+    $old = Join-Path $d 'Free GST Billing.lnk'
+    try {
+      if ((Test-Path -LiteralPath $old) -and ((Get-LinkRoot $old) -eq $dest.TrimEnd('\'))) {
+        if ($d -eq $f.Startup) { $hadStartup = $true }
+        Remove-Item -LiteralPath $old -Force
+      }
+    } catch { }
+  }
   foreach ($d in @($f.Desktop, $f.Programs)) {
     New-Item -ItemType Directory -Path $d -Force | Out-Null
-    New-AppShortcut (Join-Path $d 'Free GST Billing.lnk') $sys
+    New-AppShortcut (Join-Path $d 'Guestora Invoice.lnk') $sys
   }
+  if ($hadStartup) { New-AppShortcut (Join-Path $f.Startup 'Guestora Invoice.lnk') $sys }
   Ok
-  if (-not $isUpdate -and (Ask 'Open Free GST Billing by itself when this computer starts?')) {
+  if (-not $isUpdate -and (Ask 'Open Guestora Invoice by itself when this computer starts?')) {
     New-Item -ItemType Directory -Path $f.Startup -Force | Out-Null
-    New-AppShortcut (Join-Path $f.Startup 'Free GST Billing.lnk') $sys
+    New-AppShortcut (Join-Path $f.Startup 'Guestora Invoice.lnk') $sys
     Write-Host '        It will open by itself when this computer starts.'
   }
 
   Write-Host ''
-  Write-Host '  Done! Opening Free GST Billing...' -ForegroundColor Green
+  Write-Host '  Done! Opening Guestora Invoice...' -ForegroundColor Green
   & (Join-Path $sys 'start-windows.ps1') -AppWindow
   Write-Host ''
-  Write-Host '  Next time, click the Free GST Billing icon on your Desktop or in the Start menu.'
+  Write-Host '  Next time, click the Guestora Invoice icon on your Desktop or in the Start menu.'
   Write-Host ''
   if (-not $Test) { Start-Sleep -Seconds 10 }
 }
@@ -334,14 +354,16 @@ function Install-App {
 function Uninstall-App {
   $dest = Find-Install
   $sys = Join-Path $dest '_system'
-  if (-not (Test-Path -LiteralPath (Join-Path $sys 'server.js'))) { Fail "Free GST Billing is not installed in $dest." 'Nothing was changed.' }
+  if (-not (Test-Path -LiteralPath (Join-Path $sys 'server.js'))) { Fail "Guestora Invoice is not installed in $dest." 'Nothing was changed.' }
   Write-Host ''
-  Write-Host "  Removing Free GST Billing from $dest"
+  Write-Host "  Removing Guestora Invoice from $dest"
   Stop-App $sys
   $f = Get-IconFolders
   foreach ($d in @($f.Desktop, $f.Programs, $f.Startup)) {
-    $lnk = Join-Path $d 'Free GST Billing.lnk'
-    try { if ((Test-Path -LiteralPath $lnk) -and ((Get-LinkRoot $lnk) -eq $dest.TrimEnd('\'))) { Remove-Item -LiteralPath $lnk -Force } } catch { }
+    foreach ($name in @('Guestora Invoice.lnk', 'Free GST Billing.lnk')) {
+      $lnk = Join-Path $d $name
+      try { if ((Test-Path -LiteralPath $lnk) -and ((Get-LinkRoot $lnk) -eq $dest.TrimEnd('\'))) { Remove-Item -LiteralPath $lnk -Force } } catch { }
+    }
   }
   # The program goes; the books stay unless the user says otherwise.
   $keep = @('data', 'Saved Invoices', 'Trash')
@@ -349,7 +371,7 @@ function Uninstall-App {
   # Only the app's own files beside _system: the folder may be one the user
   # chose (FREEGSTBILL_DIR, D:\, Documents) with their own files in it. The
   # same rule as uninstall-windows.ps1.
-  Get-ChildItem -LiteralPath $dest -Force | Where-Object { $_.Name -like 'Free GST Billing - *' -or $_.Name -eq 'READ ME FIRST.txt' } | Remove-Item -Recurse -Force
+  Get-ChildItem -LiteralPath $dest -Force | Where-Object { $_.Name -like 'Guestora Invoice - *' -or $_.Name -like 'Free GST Billing - *' -or $_.Name -eq 'READ ME FIRST.txt' } | Remove-Item -Recurse -Force
   Write-Host '  The app and its icons are removed.' -ForegroundColor Green
   Write-Host ''
   Write-Host "  Your invoices, clients and settings are still in $sys"
@@ -374,7 +396,7 @@ try {
   if (-not $script:KnownProblem) {
     $diskFull = ($_.Exception.HResult -eq -2147024784) -or ($msg -match 'not enough space')
     if ($diskFull) { $msg = "The disk is full.`n    Free some space, then run the same line again." }
-    else { $msg = "$msg`n    Close Free GST Billing if it is open, then run the same line again; it carries on where it stopped." }
+    else { $msg = "$msg`n    Close Guestora Invoice if it is open, then run the same line again; it carries on where it stopped." }
   }
   Write-Host "  PROBLEM: $msg" -ForegroundColor Red
   Write-Host '    Your invoices and settings were not changed.'

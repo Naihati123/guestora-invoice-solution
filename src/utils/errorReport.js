@@ -75,7 +75,7 @@ export const KNOWN_PROBLEMS = [
   { id: 'app-out-of-date', test: /dynamically imported module|Loading chunk|Importing a module script failed/i,
     fix: 'The browser kept an old copy of the app after an update. Press Ctrl+F5 to reload it.' },
   { id: 'cannot-connect', test: /failed to fetch|networkerror|load failed|network request failed|ECONNREFUSED|ERR_CONNECTION_REFUSED|app not running/i,
-    fix: "The app's engine is not running. Click the Free GST Billing icon on your Desktop." },
+    fix: "The app's engine is not running. Click the Guestora Invoice icon on your Desktop." },
   { id: 'payload-too-large', test: /request body too large|payload too large|entity too large|-> 413\b|status 413/i,
     fix: 'What you saved is too big, usually a large logo or signature image. Use a smaller image.' },
   { id: 'disk-full', test: /ENOSPC|no space left|disk is full/i,
