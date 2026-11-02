@@ -5,6 +5,7 @@ import { toast } from './Toast';
 import HelpButton from './HelpButton';
 import { patchInvoiceDefaults, getEnabledModules, setEnabledModules, setBusinessType } from '../store';
 import { BUSINESS_TYPES, businessTypeById, applyBusinessType, invoiceDefaultsForType } from '../utils/businessTypes';
+import { APP_NAME } from '../brand';
 
 const PAPER_LABELS = { a4: 'A4', a5: 'A5', thermal80: '80mm thermal', thermal58: '58mm thermal' };
 
@@ -76,7 +77,7 @@ export default function SetupWizard({ onClose }) {
       <div className="modal-content" style={{ maxWidth: '640px', maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.35rem' }}>👋 Welcome to Free GST Billing <HelpButton title="Setting up your invoices" doc="first-run#setup-wizard" size={16} /></h2>
+            <h2 style={{ margin: 0, fontSize: '1.35rem' }}>👋 Welcome to {APP_NAME} <HelpButton title="Setting up your invoices" doc="first-run#setup-wizard" size={16} /></h2>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               Step {step} of 3 · Takes 90 seconds
             </p>

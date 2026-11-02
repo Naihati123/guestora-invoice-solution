@@ -232,7 +232,7 @@ function Show-InstallHelp {
     'The internet, the disk and the folder all look fine, so the usual cause is',
     'antivirus blocking files as they are written. Add the Free-GST-Billing folder',
     'to its exclusions and try again. If it keeps failing, open an issue at',
-    'https://github.com/IamRamgarhia/Free-GST-Billing-Software/issues with a',
+    'https://github.com/Naihati123/guestora-invoice-solution/issues with a',
     'photo of this window.')
 }
 

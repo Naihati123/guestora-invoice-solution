@@ -9,7 +9,6 @@ import { useOfflineMode } from '../utils/offlineMode';
 
 const STOPS = [
   'No automatic check for updates. Use Check for Updates in Settings when you want one.',
-  'The supporters list is not loaded (the last numbers seen still show).',
   'Invoice PDFs are not copied to Google Drive. They are still saved on this computer.',
 ];
 const KEEPS = [

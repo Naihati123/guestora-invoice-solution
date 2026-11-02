@@ -10,10 +10,9 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseSupporters } from '../src/utils/supporters.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const REPO = 'IamRamgarhia/Free-GST-Billing-Software';
+const REPO = 'Naihati123/guestora-invoice-solution';
 const offline = process.argv.includes('--offline');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 let failed = 0;
@@ -114,10 +113,6 @@ check('ERR-067 free-space checks treat "0 MB free" as unknown', !psdrive.length,
 const srcFiles = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? srcFiles(join(dir, e.name)) : /\.(jsx?|html)$/.test(e.name) ? [join(dir, e.name)] : []));
 const installPrompt = srcFiles(join(ROOT, 'src')).filter((f) => readFileSync(f, 'utf8').includes('beforeinstallprompt'));
 check('ERR-072 the app does not offer the browser\'s "Install app" icon', !installPrompt.length, `${installPrompt.join(', ')}: that icon cannot start the app ("Needs a Quick Start").`);
-
-console.log('\nLive data the app reads');
-let sup = null; try { sup = parseSupporters(JSON.parse(read('supporters.json'))); } catch { /* reported below */ }
-check('supporters.json is valid (the app hides the tracker otherwise)', !!sup, 'Fix supporters.json (use scripts/add-supporter.mjs).');
 
 console.log('\nGit');
 const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8' }).trim();

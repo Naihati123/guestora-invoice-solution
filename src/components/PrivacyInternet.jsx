@@ -9,7 +9,6 @@ import { docsLink } from '../utils';
 
 const USES = [
   ['Checking for a new version', 'By itself: a few seconds after the app opens, then every 6 hours', 'Asks GitHub for the newest version number. Nothing about you is sent.', 'Stopped'],
-  ['The supporters list', 'By itself: when Support & About or its card on the Dashboard shows', 'Reads a public list from GitHub. Nothing is sent.', 'Stopped'],
   ['Google Drive', 'Only if you set it up: with each invoice PDF you save, and when you click Save to Drive', 'Saves your files to your own Google Drive.', 'The copy with each PDF is stopped'],
   ['Updating the app', 'When you click Update or Check for Updates', 'Downloads the new version from GitHub.', 'Only when you click'],
   ['Help pages, Report a problem, WhatsApp, the GST portal', 'When you click them', 'Opens them in your browser, like any link.', 'Only when you click'],
@@ -34,8 +33,8 @@ export default function PrivacyInternet() {
           <br />
           <span style={{ fontSize: '0.85rem' }}>
             {offline
-              ? 'On. The app does not check for updates, does not read the supporters list, and does not copy invoice PDFs to Google Drive. Things you click that need the internet, such as Check for Updates, still work when you click them.'
-              : 'Off. Tick it and the app makes no internet connection by itself: no update check, no supporters list, no automatic copy to Google Drive. You can still update whenever you choose, with Check for Updates.'}
+              ? 'On. The app does not check for updates and does not copy invoice PDFs to Google Drive. Things you click that need the internet, such as Check for Updates, still work when you click them.'
+              : 'Off. Tick it and the app makes no internet connection by itself: no update check, no automatic copy to Google Drive. You can still update whenever you choose, with Check for Updates.'}
           </span>
         </span>
       </label>

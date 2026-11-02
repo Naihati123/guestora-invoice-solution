@@ -5,6 +5,7 @@ import { getStatesForCountry, getCountryConfig, detectCountryFromBrowser, create
 import { toast } from './Toast';
 import HelpButton from './HelpButton';
 import SafePrivateNote from './SafePrivateNote';
+import { APP_NAME } from '../brand';
 
 const STEPS = [
   { id: 'welcome', title: 'Welcome', icon: FileText },
@@ -119,7 +120,7 @@ export default function WelcomeGuide({ onComplete }) {
               <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                 <FileText size={32} color="white" />
               </div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>Welcome to Free GST Billing Software <HelpButton title="Welcome" doc="first-run#welcome" size={16} /></h1>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>Welcome to {APP_NAME} <HelpButton title="Welcome" doc="first-run#welcome" size={16} /></h1>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.6 }}>
                 Free, open-source GST billing software that runs 100% on your computer. Your data never leaves your machine.
               </p>

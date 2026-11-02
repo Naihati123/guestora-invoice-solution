@@ -63,7 +63,7 @@ if ($FromFolder) {
 # --- Step 2: Find latest release ---
 Write-Host '  Checking latest release from GitHub...'
 try {
-  $api = Invoke-RestMethod -Uri 'https://api.github.com/repos/IamRamgarhia/Free-GST-Billing-Software/releases/latest' -Headers @{ 'User-Agent' = 'FreeGSTBill-Updater' }
+  $api = Invoke-RestMethod -Uri 'https://api.github.com/repos/Naihati123/guestora-invoice-solution/releases/latest' -Headers @{ 'User-Agent' = 'FreeGSTBill-Updater' }
   $tag = $api.tag_name
   $zipAsset = $api.assets | Where-Object { $_.name -like '*.zip' } | Select-Object -First 1
   if (-not $zipAsset) {
@@ -94,7 +94,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # The extract may contain either the pretty release structure
 # (root has Free GST Billing - WINDOWS.hta + _system/) or the source zipball
-# (root has IamRamgarhia-Free-GST-Billing-Software-HASH/).
+# (root has Naihati123-guestora-invoice-solution-HASH/).
 $extracted = Get-ChildItem -Path $tmp -Directory | Select-Object -First 1
 $candidateSystem = Join-Path $extracted.FullName '_system'
 if (Test-Path $candidateSystem) {

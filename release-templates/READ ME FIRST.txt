@@ -13,11 +13,11 @@
 
   Windows: press Windows + R, paste this line, press Enter:
 
-    powershell -ExecutionPolicy Bypass -c "[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/IamRamgarhia/Free-GST-Billing-Software/main/install.ps1 | iex"
+    powershell -ExecutionPolicy Bypass -c "[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/Naihati123/guestora-invoice-solution/main/install.ps1 | iex"
 
   Mac / Linux: open Terminal, paste this line, press Return:
 
-    curl -fsSL https://raw.githubusercontent.com/IamRamgarhia/Free-GST-Billing-Software/main/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/Naihati123/guestora-invoice-solution/main/install.sh | bash
 
   It installs the app, adds an icon and opens it. The same
   line later updates it (your data is kept and backed up)
@@ -237,7 +237,7 @@
   Still stuck?
       Report it here, with a screenshot (hide your GSTIN and
       bank details) and the message you see:
-      https://github.com/IamRamgarhia/Free-GST-Billing-Software/issues/new?template=bug_report.yml
+      https://github.com/Naihati123/guestora-invoice-solution/issues/new?template=bug_report.yml
 
       Fixes come in the Saturday update - one every week -
       and anything urgent straight away.

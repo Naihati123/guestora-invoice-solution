@@ -8,7 +8,7 @@ import { Bug, Lightbulb, CalendarClock, ListChecks, Sparkles } from 'lucide-reac
 import { parseChangelog, inlineParts } from '../utils/changelog';
 import HelpButton from './HelpButton';
 
-const REPO = 'https://github.com/IamRamgarhia/Free-GST-Billing-Software';
+import { APP_REPO as REPO } from '../brand';
 const CHANGELOG_URL = `${REPO}/blob/main/CHANGELOG.md`;
 const card = { padding: '1.25rem 1.5rem' };
 
@@ -68,15 +68,14 @@ export default function WhatsNew() {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <CalendarClock size={26} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
           <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-            <h3 id="weekly-title" style={{ margin: '0 0 0.35rem', fontSize: '1rem' }}>A new update every Saturday <HelpButton title="A new update every Saturday" doc="support#weekly" size={16} /></h3>
+            <h3 id="weekly-title" style={{ margin: '0 0 0.35rem', fontSize: '1rem' }}>Updates and problems</h3>
             <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '72ch' }}>
-              Every Saturday we release one update with that week&apos;s fixes and new features. The app tells you when it is
-              ready: click <b>Update</b> in the sidebar, and your invoices and settings are kept. Anything urgent, such as the
-              app not opening, is fixed straight away.
+              When a new version is released, the app tells you: click <b>Update</b> in the sidebar, and your invoices and
+              settings are kept.
             </p>
             <p style={{ margin: '0 0 0.9rem', fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: '72ch' }}>
-              Tell us on GitHub what is wrong or what you need. We read every request each week, the ones most people ask
-              for come first, and you get a reply there when it is done.
+              Something wrong, or something you need? Report it on the app&apos;s GitHub page (you need access to the
+              repository), or tell whoever looks after the app in your office.
             </p>
             <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
               <a className="btn btn-primary" href={`${REPO}/issues/new?template=bug_report.yml`} target="_blank" rel="noopener noreferrer">

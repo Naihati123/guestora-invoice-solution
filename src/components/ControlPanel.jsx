@@ -4,6 +4,7 @@ import PageHeader from './PageHeader';
 import { toast } from './Toast';
 import HelpButton from './HelpButton';
 import { docsLink } from '../utils';
+import { APP_NAME } from '../brand';
 
 // v1.10.44 — In-app Control Panel.
 //
@@ -126,7 +127,7 @@ export default function ControlPanel() {
       <div className="dashboard-container">
         <div className="glass-panel p-6" style={{ maxWidth: 560, margin: '3rem auto' }}>
           <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <CheckCircle size={22} color="#22c55e" /> Free GST Billing is being removed
+            <CheckCircle size={22} color="#22c55e" /> {APP_NAME} is being removed
           </h2>
           <p>The app has closed and its files and icons are being deleted. You can close this window.</p>
           {removed.kept && (
@@ -278,7 +279,7 @@ export default function ControlPanel() {
 
       {removeOpen && status?.canRemove && (
         <div id="remove-app" className="glass-panel p-6" style={{ marginTop: '1.5rem', border: '1px solid #dc2626' }}>
-          <h3 style={{ margin: '0 0 0.4rem' }}>Remove Free GST Billing from this computer</h3>
+          <h3 style={{ margin: '0 0 0.4rem' }}>Remove {APP_NAME} from this computer</h3>
           <p style={{ margin: '0 0 0.8rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Tick what else should be deleted. Anything not ticked stays in <code>{status.appFolder}</code>.
           </p>

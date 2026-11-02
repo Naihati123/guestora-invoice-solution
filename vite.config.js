@@ -58,9 +58,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'og-preview.png'],
       manifest: {
-        name: 'Free GST Billing Software',
-        short_name: 'GST Billing',
-        description: 'Open-source, offline GST invoicing for India and 21 other countries. Tax invoices, GSTR-1 / GSTR-3B / GSTR-2B, TDS / TCS, multi-currency, multi-account payments, recurring billing. Your data stays on your computer. Free forever.',
+        name: 'Guestora Invoice',
+        short_name: 'Guestora Invoice',
+        description: 'GST billing for Guestora Solutions Private Limited. Runs on this computer and works offline.',
         theme_color: '#1e40af',
         background_color: '#f8fafc',
         display: 'standalone',

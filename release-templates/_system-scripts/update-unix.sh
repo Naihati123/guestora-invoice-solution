@@ -30,7 +30,7 @@ set -eu
 # installing dependencies is worse than one that finishes or rolls back.
 trap '' HUP PIPE
 
-REPO_API='https://api.github.com/repos/IamRamgarhia/Free-GST-Billing-Software/releases/latest'
+REPO_API='https://api.github.com/repos/Naihati123/guestora-invoice-solution/releases/latest'
 
 say()  { printf '  %s\n' "$*" 2>/dev/null || true; }
 fail() { printf '\n  ERROR: %s\n\n' "$*" >&2 2>/dev/null || true; exit 1; }
@@ -118,7 +118,7 @@ else
     Alpine:           apk add unzip
   Nothing was changed.
   (Or update with the one-line install, which needs neither:
-    curl -fsSL https://raw.githubusercontent.com/IamRamgarhia/Free-GST-Billing-Software/main/install.sh | FREEGSTBILL_DIR="'"$(dirname "$SYSTEM_DIR")"'" sh )'
+    curl -fsSL https://raw.githubusercontent.com/Naihati123/guestora-invoice-solution/main/install.sh | FREEGSTBILL_DIR="'"$(dirname "$SYSTEM_DIR")"'" sh )'
 fi
 
 FROM=$(version_of "$SYSTEM_DIR")

@@ -8,7 +8,7 @@ body:
       value: |
         Thank you! We read every request each week. The ones most people ask for go into a **Saturday update** first, and you get a reply here when it is done.
 
-        Asked for already? Search the [open requests](https://github.com/IamRamgarhia/Free-GST-Billing-Software/issues) and add a 👍 to it: that counts as a vote.
+        Asked for already? Search the [open requests](https://github.com/Naihati123/guestora-invoice-solution/issues) and add a 👍 to it: that counts as a vote.
   - type: textarea
     id: need
     attributes:

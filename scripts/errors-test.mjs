@@ -92,7 +92,7 @@ ok(isChunkLoadError('Loading chunk 7 failed') && !isChunkLoadError('Failed to fe
 console.log('\n[Report URL] pre-filled GitHub form');
 const url = buildIssueUrl(e);
 const q = new URL(url).searchParams;
-ok(url.startsWith('https://github.com/IamRamgarhia/Free-GST-Billing-Software/issues/new?'), 'opens a new issue');
+ok(url.startsWith('https://github.com/Naihati123/guestora-invoice-solution/issues/new?'), 'opens a new issue');
 eq(q.get('template'), 'bug_report.yml', 'uses the bug form');
 eq(q.get('version'), '1.10.83', 'version field filled');
 ok(q.get('title').startsWith('[Problem] Save failed for [gstin]'), 'title from the redacted message', q.get('title'));
