@@ -1,0 +1,94 @@
+// v1.10.83 (#121) - the Import CSV window of Products and Clients: download a
+// sample file, choose your file, see what will be added, import. Parsing is
+// in src/utils/listCsv.js. Old invoices are imported elsewhere (Dashboard ->
+// CSV import / export), so this window says where.
+import { useState } from 'react';
+import { Upload, Download, X } from 'lucide-react';
+import { toast } from './Toast';
+import HelpButton from './HelpButton';
+
+const download = (text, name) => {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+// what: 'products' | 'clients'. parse(text) -> { list, skipped, errors }.
+// save(item) saves one. intro: what the columns are.
+export default function CsvListImport({ what, sample, sampleName, doc, intro, parse, save, onClose, onDone }) {
+  const [plan, setPlan] = useState(null); // { fileName, list, skipped, errors }
+  const [busy, setBusy] = useState(false);
+
+  const pickFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setPlan({ fileName: file.name, ...parse(await file.text()) });
+    } catch (err) {
+      toast(`Could not read ${file.name}: ${err.message}`, 'error');
+    }
+  };
+
+  const runImport = async () => {
+    setBusy(true);
+    let saved = 0;
+    try {
+      for (const item of plan.list) { await save(item); saved += 1; }
+      toast(`Imported ${saved} ${what}${plan.skipped ? `, skipped ${plan.skipped} already in your list` : ''}`, 'success');
+      onDone();
+    } catch (err) {
+      toast(`Import stopped after ${saved}: ${err.message}`, 'error', 9000);
+      if (saved) onDone(); else setBusy(false);
+    }
+  };
+
+  const close = () => { if (!busy) onClose(); };
+  const n = plan?.list.length || 0;
+  return (
+    <div className="modal-overlay" onClick={close}>
+      <div className="modal-content" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 className="section-title" style={{ margin: 0, textTransform: 'none' }}>Import {what} from CSV <HelpButton title={`Importing ${what}`} doc={doc} size={16} /></h3>
+          <button type="button" className="icon-btn" onClick={close} title="Close" aria-label="Close"><X size={16} /></button>
+        </div>
+        <p className="text-muted" style={{ fontSize: '0.85rem' }}>{intro} Names already in your list are skipped, so importing the same file twice is safe.</p>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+          <button type="button" className="btn btn-secondary" onClick={() => download(sample, sampleName)}
+            title="A CSV with the right column headings and two example rows. Open it in Excel or Google Sheets, replace the examples and save as CSV.">
+            <Download size={15} /> Download sample file
+          </button>
+          <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
+            <Upload size={15} /> Choose CSV file
+            <input type="file" accept=".csv,text/csv" onChange={pickFile} style={{ display: 'none' }} />
+          </label>
+        </div>
+        {plan && (
+          <div style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 8, fontSize: '0.85rem' }}>
+            <strong>{plan.fileName}</strong>: {n} ready to import
+            {plan.skipped > 0 && <> · {plan.skipped} already in your list (skipped)</>}
+            {plan.errors.length > 0 && (
+              <>
+                <p style={{ color: 'var(--danger)', margin: '0.5rem 0 0.25rem' }}>{plan.errors.length} row{plan.errors.length === 1 ? '' : 's'} with a problem (not imported; fix the file and choose it again):</p>
+                <ul style={{ margin: 0, paddingLeft: '1.1rem', maxHeight: 150, overflowY: 'auto' }}>
+                  {plan.errors.slice(0, 50).map((e) => <li key={e}>{e}</li>)}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+        <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0.75rem 0 0' }}>
+          Old invoices? Import them on the Dashboard with <b>CSV import / export</b>, which has its own template.
+          <HelpButton title="Importing old invoices" doc="dashboard#csv" size={14} />
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+          <button type="button" className="btn btn-secondary" onClick={close} disabled={busy}>Close</button>
+          <button type="button" className="btn btn-primary" onClick={runImport} disabled={busy || !n}>
+            {busy ? 'Importing…' : `Import ${n || ''}`.trim()}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

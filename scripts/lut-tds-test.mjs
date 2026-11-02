@@ -1,0 +1,140 @@
+// v1.10.83 - exports / SEZ under a LUT (no IGST, the Rule 46 declaration) and
+// the TDS & TCS report (client TDS, TCS, TDS on purchase bills).
+//
+// Run: `node scripts/lut-tds-test.mjs`
+
+import { computeInvoiceTotals, generateEWayBillJSON, amountDue, paymentStatusFor, TCS_SECTIONS } from '../src/utils.js';
+import { fyOf, isLikelyLutArn, normaliseLutArn, lutCoversDate, isExportOrSez, exportDeclaration, lutFyOptions, LUT_DECLARATION, IGST_PAID_DECLARATION } from '../src/utils/lut.js';
+import { quarterOf, fyQuarterRange, inRange, panFromGstin, salesTaxRows, purchaseTdsAmount, paidToSupplier, purchaseTdsRows, totalsBy, withClientTds } from '../src/utils/tdsTcs.js';
+
+let passed = 0, failed = 0;
+function eq(actual, expected, label) {
+  if (JSON.stringify(actual) === JSON.stringify(expected)) { passed++; console.log(`  ok ${label}`); }
+  else { failed++; console.log(`  FAIL ${label}\n     expected: ${JSON.stringify(expected)}\n     actual:   ${JSON.stringify(actual)}`); }
+}
+
+// The demo business only: DiceCodes, Karnataka.
+const profile = { businessName: 'DiceCodes', country: 'India', state: 'Karnataka', gstin: '29ABCDE1234F1ZW', pin: '560001', lutArn: 'AD290426123456X', lutFy: '2026-27' };
+const usClient = { name: 'Acme Inc', country: 'United States', state: '' };
+const sezClient = { name: 'SEZ Unit', country: 'India', state: 'Karnataka', gstin: '29AAACS1234A1Z5', isSEZ: true, pin: '560100' };
+const items = [{ name: 'Software services', hsn: '998314', quantity: 1, rate: 100000, taxPercent: 18 }];
+const totalsFor = (client, invoiceOptions = {}, extra = {}) => computeInvoiceTotals({ items, profile, client, details: { invoiceDate: '2026-10-29' }, showGST: true, invoiceOptions, ...extra });
+
+console.log('\n[LUT] Financial year and ARN');
+{
+  eq([fyOf('2026-04-01'), fyOf('2027-03-31'), fyOf('2026-03-31'), fyOf('')], ['2026-27', '2026-27', '2025-26', ''], 'A financial year runs April to March');
+  eq(fyOf('2099-12-01'), '2099-00', 'The year after 2099 wraps to 00');
+  eq([isLikelyLutArn('AD290426123456X'), isLikelyLutArn('ad29 0426 123456x'), isLikelyLutArn('AD29'), isLikelyLutArn('AD29-0426-1234-56X!')], [true, true, false, false], 'An ARN is 15 letters and digits (spaces and case forgiven)');
+  eq(normaliseLutArn(' ad29-0426 123456x '), 'AD290426123456X', 'ARN is stored upper case without spaces');
+  eq(lutFyOptions(new Date(2026, 9, 29)), ['2027-28', '2026-27', '2025-26', '2024-25'], 'Settings offers next year, this year and two before');
+  eq([lutCoversDate(profile, '2026-10-29'), lutCoversDate(profile, '2027-04-02'), lutCoversDate({ lutFy: '2026-27' }, '2026-10-29')], [true, false, false], 'A LUT covers only its own year, and needs an ARN');
+}
+
+console.log('\n[LUT] Which supplies qualify');
+{
+  eq(isExportOrSez({ profile, client: usClient, details: {} }), true, 'Client abroad = export');
+  eq(isExportOrSez({ profile, client: sezClient, details: {} }), true, 'SEZ client qualifies even in the same state');
+  eq(isExportOrSez({ profile, client: { country: 'India', state: 'Kerala' }, details: {} }), false, 'Ordinary Indian client does not');
+  eq(isExportOrSez({ profile, client: usClient, details: { placeOfSupply: 'Karnataka' } }), false, 'Foreign buyer with an Indian place of supply is not an export');
+  eq(isExportOrSez({ profile: { ...profile, country: 'United Arab Emirates' }, client: usClient, details: {} }), false, 'Only an Indian business');
+}
+
+console.log('\n[LUT] Tax on the invoice');
+{
+  const paid = totalsFor(usClient);
+  eq([paid.igst, paid.total, paid.lutZeroRated], [18000, 118000, false], 'Export without LUT charges IGST');
+  const lut = totalsFor(usClient, { isLUT: true });
+  eq([lut.igst, lut.cgst, lut.totalTaxAmount, lut.total, lut.lutZeroRated, lut.lines[0].tax, lut.lines[0].taxPct], [0, 0, 0, 100000, true, 0, 18], 'Export under LUT: no IGST, the line keeps its 18% rate');
+  const sez = totalsFor(sezClient, { isLUT: true });
+  eq([sez.igst, sez.total, sez.isInterstate, sez.lutZeroRated], [0, 100000, true, true], 'SEZ under LUT: no IGST, still inter-state');
+  const sezPaid = totalsFor(sezClient);
+  eq([sezPaid.igst, sezPaid.cgst], [18000, 0], 'SEZ with payment: IGST, never CGST + SGST');
+  const domestic = totalsFor({ country: 'India', state: 'Kerala' }, { isLUT: true });
+  eq([domestic.igst, domestic.lutZeroRated], [18000, false], 'A stray LUT flag on a domestic sale changes nothing');
+  const rcm = totalsFor(sezClient, { isLUT: true, reverseCharge: true });
+  eq(rcm.lutZeroRated, false, 'Never zero-rated together with reverse charge');
+  const incl = totalsFor(usClient, { isLUT: true }, { taxInclusive: true });
+  eq([incl.taxableAmount, incl.total, incl.taxInclusive], [100000, 100000, false], 'Tax-inclusive prices under LUT have no tax to back out');
+  const cess = computeInvoiceTotals({ items: [{ ...items[0], cessPercent: 12 }], profile, client: usClient, details: {}, showGST: true, invoiceOptions: { isLUT: true } });
+  eq([cess.cess, cess.total], [0, 100000], 'No cess under LUT either');
+  const bos = totalsFor(usClient, { isLUT: true }, { showGST: false });
+  eq(bos.lutZeroRated, false, 'A bill of supply is not marked zero-rated');
+}
+
+console.log('\n[LUT] Rule 46 declaration');
+{
+  const lut = totalsFor(usClient, { isLUT: true });
+  eq(exportDeclaration({ profile, client: usClient, details: {}, totals: lut, options: { lutArn: 'AD290426123456X', lutFy: '2026-27' } }),
+    `${LUT_DECLARATION} - LUT ARN AD290426123456X (FY 2026-27)`, 'Under LUT: the declaration with the ARN and year');
+  eq(exportDeclaration({ profile, client: sezClient, details: {}, totals: lut, options: {} }), LUT_DECLARATION, 'Under LUT without a saved ARN: the declaration alone');
+  eq(exportDeclaration({ profile, client: usClient, details: {}, totals: totalsFor(usClient), options: {} }), IGST_PAID_DECLARATION, 'With payment of IGST: the other Rule 46 wording');
+  eq(exportDeclaration({ profile, client: { country: 'India' }, details: {}, totals: lut, options: {} }), '', 'A domestic invoice prints nothing');
+  eq(exportDeclaration({ profile, client: usClient, details: {}, totals: lut, options: {}, showGST: false }), '', 'Nor does one without GST');
+  eq(LUT_DECLARATION.startsWith('SUPPLY MEANT FOR EXPORT/SUPPLY TO SEZ UNIT OR SEZ DEVELOPER'), true, 'Rule 46 wording kept exactly');
+}
+
+console.log('\n[LUT] E-Way Bill');
+{
+  const t = totalsFor(sezClient, { isLUT: true });
+  const ewb = generateEWayBillJSON(profile, sezClient, { invoiceNumber: 'INV-1', invoiceDate: '2026-10-29' }, items, t, 'tax-invoice', {});
+  eq([ewb.billLists[0].itemList[0].igstRate, ewb.billLists[0].itemList[0].taxableAmount], [0, 100000], 'Rates are 0 under LUT');
+  let msg = '';
+  try { generateEWayBillJSON({ ...profile, pin: '' }, sezClient, {}, items, t, 'tax-invoice', {}); } catch (e) { msg = e.message; }
+  eq(msg.includes('Settings → Company'), true, 'A missing business PIN says where to fill it');
+  try { generateEWayBillJSON(profile, { ...sezClient, pin: '' }, {}, items, t, 'tax-invoice', {}); } catch (e) { msg = e.message; }
+  eq(msg.includes('Billed To'), true, "A missing client PIN says where to fill it");
+}
+
+console.log('\n[TCS] Section 52 rate');
+eq(TCS_SECTIONS.find((s) => s.code === '52').rate, 0.5, 'CGST section 52 is 0.5% since 10 July 2024');
+
+console.log('\n[TDS & TCS] Periods');
+{
+  eq(['2026-04-15', '2026-09-30', '2026-10-01', '2027-03-31', ''].map(quarterOf), ['Q1', 'Q2', 'Q3', 'Q4', ''], 'Financial-year quarters');
+  eq([fyQuarterRange('2026-2027'), fyQuarterRange('2026-2027', 'Q4')], [{ from: '2026-04-01', to: '2027-03-31' }, { from: '2027-01-01', to: '2027-03-31' }], 'Whole year and Q4 dates');
+  eq([inRange('2026-05-01', { from: '2026-04-01', to: '2026-06-30' }), inRange('2026-07-01', { from: '2026-04-01', to: '2026-06-30' }), inRange('2026-07-01', {}), inRange('', {})], [true, false, true, false], 'Both days included; no range = everything dated');
+  eq([panFromGstin('29ABCDE1234F1ZW'), panFromGstin('URP'), panFromGstin('')], ['ABCDE1234F', '', ''], 'PAN read from the GSTIN');
+}
+
+console.log('\n[TDS & TCS] Sales');
+{
+  const bill = (id, date, opts, totals, extra = {}) => ({ id, invoiceNumber: id, invoiceDate: date, invoiceType: 'tax-invoice', totalAmount: totals.total, ...extra,
+    data: { client: { name: extra.client || 'Ramesh Traders', gstin: '29ABCDE1234F1ZW' }, invoiceOptions: opts, totals } });
+  const bills = [
+    bill('INV-1', '2026-05-10', { showTDS: true, tdsSection: '194J', tdsRate: 10 }, { taxableAmount: 100000, total: 118000, tdsAmount: 10000 }, { tdsCertificate: true }),
+    bill('INV-2', '2026-11-02', { showTDS: true, tdsSection: '194C-co', tdsRate: 2 }, { taxableAmount: 50000, total: 59000, tdsAmount: 1000 }, { client: 'Suresh & Co' }),
+    bill('INV-3', '2026-06-01', { showTCS: true, tcsSection: '52', tcsRate: 0.5 }, { taxableAmount: 20000, total: 23700, tcsAmount: 100 }),
+    bill('INV-4', '2026-06-02', { showTDS: true, tdsRate: 10 }, { taxableAmount: 10000, total: 11800, tdsAmount: 1000 }, { status: 'cancelled' }),
+    bill('QUO-1', '2026-06-03', { showTDS: true, tdsRate: 10 }, { taxableAmount: 10000, total: 11800, tdsAmount: 1000 }, { invoiceType: 'quotation' }),
+    bill('INV-5', '2026-06-04', {}, { taxableAmount: 10000, total: 11800 }),
+  ];
+  const tds = salesTaxRows(bills, 'tds');
+  eq(tds.map((r) => [r.invoiceNumber, r.section, r.amount, r.certificate, r.quarter, r.pan]), [['INV-1', '194J', 10000, true, 'Q1', 'ABCDE1234F'], ['INV-2', '194C', 1000, false, 'Q3', 'ABCDE1234F']], 'Only sales with TDS; cancelled and quotations left out');
+  eq(salesTaxRows(bills, 'tds', fyQuarterRange('2026', 'Q1')).length, 1, 'Quarter filter');
+  eq(salesTaxRows(bills, 'tcs').map((r) => [r.invoiceNumber, r.section, r.amount, r.taxable]), [['INV-3', '52', 100, 20000]], 'TCS collected');
+  eq(totalsBy(tds, (r) => r.party), [{ key: 'Ramesh Traders', count: 1, taxable: 100000, amount: 10000 }, { key: 'Suresh & Co', count: 1, taxable: 50000, amount: 1000 }], 'Totals by client');
+}
+
+console.log('\n[TDS] Recorded with a payment');
+{
+  const bill = { id: 'INV-9', totalAmount: 118000, paidAmount: 108000, invoiceType: 'tax-invoice', data: { invoiceOptions: {}, totals: { taxableAmount: 100000, total: 118000, tdsAmount: 0 } } };
+  eq([amountDue(bill), paymentStatusFor(bill, 108000)], [118000, 'partial'], 'Without TDS the short payment is Partial');
+  const withTds = withClientTds(bill, { section: '194J', rate: 10 });
+  eq([withTds.data.totals.tdsAmount, withTds.data.totals.netReceivable, withTds.data.invoiceOptions.showTDS, withTds.data.invoiceOptions.tdsSection], [10000, 108000, true, '194J'], 'TDS on the value before GST goes on the invoice');
+  eq([amountDue(withTds), paymentStatusFor(withTds, 108000)], [108000, 'paid'], 'With the TDS recorded the invoice is Paid');
+  eq(bill.data.totals.tdsAmount, 0, 'The original bill is not changed');
+}
+
+console.log('\n[TDS] Purchase bills');
+{
+  eq([purchaseTdsAmount(50000, 2), purchaseTdsAmount(50000, 2, '999.5'), purchaseTdsAmount(50000, 2, ''), purchaseTdsAmount(50000, 'x')], [1000, 999.5, 1000, 0], 'Rate on the value before GST, or the amount typed in');
+  const p = { id: 'p1', kind: 'bill', date: '2026-08-05', invoiceNumber: 'S-77', supplierName: 'Builder', supplierGstin: '29AAACB1234C1Z5', taxableAmount: 50000, totalAmount: 59000, tdsSection: '194C-co', tdsRate: 2, tdsAmount: 1000 };
+  eq(paidToSupplier(p), 58000, 'Paid to supplier = total less TDS');
+  const rows = purchaseTdsRows([p, { ...p, id: 'p2', tdsAmount: 0 }, { ...p, id: 'po', kind: 'po' }]);
+  eq(rows.map((r) => [r.invoiceNumber, r.section, r.amount, r.paid, r.quarter, r.pan]), [['S-77', '194C', 1000, 58000, 'Q2', 'AAACB1234C']], 'Only bills with TDS; purchase orders left out');
+  eq(totalsBy(rows, (r) => r.section), [{ key: '194C', count: 1, taxable: 50000, amount: 1000 }], 'Totals by section');
+}
+
+console.log('\n────────────────────────────────────────');
+console.log(`Passed: ${passed}   Failed: ${failed}`);
+if (failed) process.exit(1);
