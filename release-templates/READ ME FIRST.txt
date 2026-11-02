@@ -52,6 +52,10 @@
 
   A small window opens with one button.
 
+  WINDOWS WITH McAFEE: McAfee stops that window's Install
+  button. Double-click "Guestora Invoice - WINDOWS INSTALL"
+  instead: it runs the same install in a black window.
+
   MAC: install Node.js first (free): https://nodejs.org ->
   macOS Installer (LTS). Then hold Control, click
   "Guestora Invoice - MAC" and choose Open, then Open again.

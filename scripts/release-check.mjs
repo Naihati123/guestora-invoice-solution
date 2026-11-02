@@ -63,7 +63,7 @@ else {
   if (e) {
     check('every path uses "/" (ERR-014, ERR-061)', !e.some((x) => x.name.includes('\\')), 'Backslash paths unpack as flat files on Linux / Mac. Build with npm run release:zip, never Compress-Archive.');
     check('server.js is at Guestora-Invoice/_system/', e.some((x) => x.name === 'Guestora-Invoice/_system/server.js'), 'The layout is wrong; the launchers will not find the app.');
-    for (const l of ['Guestora Invoice - WINDOWS.hta', 'Guestora Invoice - MAC.command', 'Guestora Invoice - LINUX.sh', 'READ ME FIRST.txt']) {
+    for (const l of ['Guestora Invoice - WINDOWS.hta', 'Guestora Invoice - WINDOWS INSTALL.cmd', 'Guestora Invoice - MAC.command', 'Guestora Invoice - LINUX.sh', 'READ ME FIRST.txt']) {
       check(`${l} is in the ZIP`, e.some((x) => x.name === `Guestora-Invoice/${l}`), `${l} is missing from the ZIP.`);
     }
     const scripts = e.filter((x) => /\.(command|sh)$/.test(x.name));
