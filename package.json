@@ -1,6 +1,6 @@
 {
   "name": "guestora-invoice",
-  "version": "1.10.83",
+  "version": "1.10.84",
   "private": true,
   "description": "Guestora Invoice: GST billing for Guestora Solutions Private Limited. Based on Free GST Billing Software by DiceCodes (MIT).",
   "author": "Guestora Solutions Private Limited",

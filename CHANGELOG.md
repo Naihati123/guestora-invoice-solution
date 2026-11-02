@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.84] - 2026-11-03
+
+First update of **Guestora Invoice**.
+
+### How to update
+
+**Current version:** 1.10.83  →  **New version:** 1.10.84
+
+Open the app, go to **Settings → Check for Updates**, then click **Update Now**.
+Your invoices are backed up first and kept.
+
+### Changed
+- **Quotation, Proforma, Delivery Challan and Credit Note now print as their
+  own documents** in the Boxed and Tally designs, instead of as a tax invoice
+  with a different title.
+  - Quotation: "Quotation For", "Valid Until", "Total Quoted Amount"; no bank
+    details, UPI QR or tax in words.
+  - Proforma Invoice: "Valid Until"; bank details kept for an advance payment.
+  - Delivery Challan: "Consignee" and "Delivery At"; items with HSN, unit and
+    quantity only, the total quantity and one value of goods (Rule 55); a box
+    for the receiver's name, signature and date; no bank details.
+  - Credit Note: "Against Invoice" in bold, "Total Credit"; no due date or
+    bank details.
+  - Each says it is not a tax invoice. The stock declaration ("this invoice
+    shows the actual price...") prints only on invoices.
+- Tally design: the number box reads "Quotation No.", "Challan No." and so on.
+
+Tax invoices print as before.
+
+---
+
 ## [1.10.83] - 2026-10-31
 
 ### How to update
