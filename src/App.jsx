@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { Home, FileText, Settings, Plus, Users, Package, BarChart3, Wallet, RefreshCw, Receipt, BookOpen, Moon, Sun, Download, X, ShoppingCart, ChevronDown, Building2, Pencil, HelpCircle, Search, Command, Bell, Calculator, HardDrive, Menu, Info, Banknote } from 'lucide-react';
-import { getAllProfiles, saveProfile, getEnabledModules, getMenuOrder, onMenuChanged, getAllBills, getAllProducts, getStockAlertSettings, getAllClients, runUpdateNow, getLockStatus } from './store';
+import { Home, FileText, Settings, Plus, Users, Package, BarChart3, Wallet, RefreshCw, Receipt, BookOpen, Moon, Sun, Download, X, ShoppingCart, ChevronDown, Building2, Pencil, HelpCircle, Search, Command, Bell, Calculator, HardDrive, Menu, Info, Banknote, Archive } from 'lucide-react';
+import { getAllProfiles, saveProfile, getEnabledModules, getMenuOrder, onMenuChanged, getAllBills, getAllProducts, getStockAlertSettings, getAllClients, runUpdateNow, reloadWhenServerBack, getLockStatus } from './store';
 import { isModuleEnabled, getUpcomingFilings, countsAsSales, localToday, toLocalIsoDate, DOCS_URL, findLowStock, trackedStock } from './utils';
 import { orderedMenu } from './utils/businessTypes';
 // v1.10.4 — Route-level lazy loading. Prior App.jsx synchronously
@@ -37,6 +37,7 @@ const IncomeTax = lazy(() => import('./components/IncomeTax'));
 const PurchaseBills = lazy(() => import('./components/PurchaseBills'));
 const ControlPanel = lazy(() => import('./components/ControlPanel'));
 const SupportView = lazy(() => import('./components/SupportView'));
+const RecordsView = lazy(() => import('./components/RecordsView'));
 import { APP_NAME } from './brand';
 import AppFooter from './components/AppFooter';
 import LockButton from './components/LockButton';
@@ -80,7 +81,7 @@ function App() {
       const params = new URLSearchParams(window.location.search);
       const v = params.get('view');
       // v1.10.74 - 'controlpanel' added so ?view=controlpanel deep links work too.
-      const valid = ['dashboard', 'new', 'clients', 'inventory', 'expenses', 'purchases', 'recurring', 'receipts', 'cashbook', 'reports', 'filing', 'incometax', 'settings', 'controlpanel', 'support'];
+      const valid = ['dashboard', 'new', 'clients', 'records', 'inventory', 'expenses', 'purchases', 'recurring', 'receipts', 'cashbook', 'reports', 'filing', 'incometax', 'settings', 'controlpanel', 'support'];
       if (v && valid.includes(v)) {
         // Strip the query string so a refresh doesn't keep snapping back to
         // the shortcut target — only the *first* navigation honours it.
@@ -304,6 +305,14 @@ function App() {
     setUpdating(true);
     toast('Updating… your data is backed up first. This takes about a minute.', 'info', 8000);
     const result = await runUpdateNow();
+    if (result.ok && result.restarting) {
+      toast('Update finished. Restarting the app…', 'success', 10000);
+      if (await reloadWhenServerBack()) return;
+      setUpdating(false);
+      setShowUpdateModal(false);
+      toast('The app did not come back by itself. Close it and open it again from its icon.', 'error', 15000);
+      return;
+    }
     setUpdating(false);
     if (result.ok) {
       setShowUpdateModal(false);
@@ -510,7 +519,7 @@ function App() {
   // If the user just disabled the module backing the current view, kick them to dashboard
   // so they don't land on an empty page after toggling.
   useEffect(() => {
-    const map = { new: 'invoicing', clients: 'clients', inventory: 'inventory', expenses: 'expenses', purchases: 'purchases', recurring: 'recurring', receipts: 'receipts', cashbook: 'cashBook', reports: 'reports', filing: 'gstReturns', incometax: 'incomeTax' };
+    const map = { new: 'invoicing', clients: 'clients', records: 'records', inventory: 'inventory', expenses: 'expenses', purchases: 'purchases', recurring: 'recurring', receipts: 'receipts', cashbook: 'cashBook', reports: 'reports', filing: 'gstReturns', incometax: 'incomeTax' };
     const moduleForView = map[currentView];
     if (moduleForView && !isModuleEnabled(moduleForView, enabledModules)) {
       setCurrentView('dashboard');
@@ -524,6 +533,7 @@ function App() {
     dashboard: { icon: Home, label: 'Dashboard' },
     new: { icon: Plus, label: 'New Invoice', onClick: handleNewInvoice },
     clients: { icon: Users, label: 'Clients' },
+    records: { icon: Archive, label: 'Records' },
     inventory: { icon: Package, label: 'Products' },
     expenses: { icon: Wallet, label: 'Expenses' },
     purchases: { icon: ShoppingCart, label: 'Purchases' },
@@ -1039,6 +1049,9 @@ function App() {
             opens, so a switch left the previous company's records on screen,
             and a record added straight after switching was saved under the OLD
             business. Remounting makes every one of them read it again. */}
+        {currentView === 'records' && (
+          <RecordsView key={businessKey} onOpenBill={handleEditInvoice} />
+        )}
         {currentView === 'expenses' && (
           <ExpenseTracker key={businessKey} />
         )}
@@ -1301,7 +1314,7 @@ function App() {
               </button>
             </div>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.6rem', marginBottom: 0 }}>
-              <em>Update Now</em> backs up your data, then fetches the newest release. It takes about a minute — leave this window open, then reload the page when it finishes.
+              <em>Update Now</em> backs up your data, then fetches the newest release. It takes about a minute — leave this window open; the app restarts and reloads by itself when it finishes.
             </p>
           </div>
         </div>

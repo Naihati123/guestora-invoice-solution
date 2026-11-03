@@ -15,11 +15,16 @@
 #     with no download. It works offline and does not depend on the older
 #     copy's own updater. The launcher uses it when it finds the app already
 #     installed elsewhere, instead of installing a second copy.
+#   * v1.10.85 - -FromApp: started by Update Now in the app, with no window
+#     anyone can type in. It must not wait for Enter at the end (it used to,
+#     forever), and the app restarts itself into the new version afterwards.
 
-param([string]$InstallTo = '')
+param([string]$InstallTo = '', [switch]$FromApp)
 
 $ErrorActionPreference = 'Stop'
-$Host.UI.RawUI.WindowTitle = 'Guestora Invoice - Update'
+try { $Host.UI.RawUI.WindowTitle = 'Guestora Invoice - Update' } catch { }
+
+function Wait-Close { if (-not $FromApp) { Read-Host '  Press Enter to close' | Out-Null } }
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $SystemDir = $ScriptDir
@@ -31,7 +36,7 @@ if ($InstallTo) {
   $SystemDir = Join-Path $RootDir '_system'
   if (($RootDir -eq $FromFolder.TrimEnd('\')) -or -not (Test-Path -LiteralPath (Join-Path $SystemDir 'server.js'))) {
     Write-Host "  ERROR: no installed copy of the app in $RootDir." -ForegroundColor Red
-    Read-Host '  Press Enter to close'
+    Wait-Close
     exit 1
   }
 }
@@ -75,7 +80,7 @@ try {
   Write-Host "  Latest: $tag"
 } catch {
   Write-Host "  ERROR: could not reach GitHub. Are you online?" -ForegroundColor Red
-  Read-Host '  Press Enter to close'
+  Wait-Close
   exit 1
 }
 
@@ -165,7 +170,7 @@ if (-not $npmOk) {
   Write-Host '  The new version is in place, but it is not ready to run yet (see above).' -ForegroundColor Red
   Write-Host '  Your data is safe (a backup was made above). Fix the problem shown,'
   Write-Host '  then open the app from its icon: it finishes the install by itself.'
-  Read-Host '  Press Enter to close'
+  Wait-Close
   exit 1
 }
 
@@ -174,6 +179,10 @@ if ($tmp) { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
 
 Write-Host ''
 Write-Host '  [OK] Update complete!' -ForegroundColor Green
-Write-Host '  Restart the app (Stop Server -> Open App) to run the new version.'
+if ($FromApp) {
+  Write-Host '  The app restarts by itself into the new version.'
+} else {
+  Write-Host '  Restart the app (Stop Server -> Open App) to run the new version.'
+}
 Write-Host ''
-Read-Host '  Press Enter to close'
+Wait-Close

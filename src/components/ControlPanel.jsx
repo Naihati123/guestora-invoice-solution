@@ -5,6 +5,7 @@ import { toast } from './Toast';
 import HelpButton from './HelpButton';
 import { docsLink } from '../utils';
 import { APP_NAME } from '../brand';
+import { reloadWhenServerBack } from '../store';
 
 // v1.10.44 — In-app Control Panel.
 //
@@ -66,6 +67,13 @@ export default function ControlPanel() {
       });
       const data = await r.json();
       setLastResult({ action, ...data });
+      // v1.10.85 - after an update the server restarts into the new version.
+      if (data.ok && data.restarting) {
+        toast('Update finished. Restarting the app…', 'success', 10000);
+        if (await reloadWhenServerBack()) return;
+        setLastResult({ action, ok: false, error: 'The update is in, but the app did not come back within 30 seconds. Open it again from its icon or launcher.' });
+        return;
+      }
       if (data.ok) toast(`${prettyAction(action)} completed.`, 'success');
       else toast(`${prettyAction(action)} failed — ${data.error || 'see details below'}`, 'error');
     } catch (e) {

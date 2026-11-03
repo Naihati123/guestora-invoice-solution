@@ -158,6 +158,11 @@ copyFileSync(join(REPO_ROOT, 'src', 'utils', 'cashBook.js'), join(SYSTEM, 'src',
 for (const f of ['purchasePayments.js', 'purchaseOrders.js']) {
   copyFileSync(join(REPO_ROOT, 'src', 'utils', f), join(SYSTEM, 'src', 'utils', f));
 }
+// v1.10.85 - Records are checked on save with the form's own rules: records.js
+// imports bulkCsv.js (its CSV and date helpers), and both import ../utils.js only.
+for (const f of ['records.js', 'bulkCsv.js']) {
+  copyFileSync(join(REPO_ROOT, 'src', 'utils', f), join(SYSTEM, 'src', 'utils', f));
+}
 
 copyDirRecursive(join(REPO_ROOT, 'dist'), join(SYSTEM, 'dist'));
 // Only ship the scripts that postinstall / release-time need — not the

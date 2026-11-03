@@ -16,6 +16,7 @@ import { fileURLToPath } from 'url';
 import { redact } from './src/utils/errorReport.js';
 import { validateCashEntry, cleanCashEntry } from './src/utils/cashBook.js';
 import { validatePurchasePayments } from './src/utils/purchasePayments.js';
+import { cleanRecord, recordProblem, RECORD_FILE_EXTS, RECORD_FILE_LIMIT_MB } from './src/utils/records.js';
 import { templateTotals, clientYearToDate, nextCounterValue, startFor, numberSeriesFor, counterKeyFor, formatDocNumber, businessKeyOf, getFinancialYearLabel, INVOICE_TYPES } from './src/utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -94,7 +95,7 @@ app.use((req, res, next) => {
 });
 
 // Ensure data directory and sub-directories exist
-const DIRS = ['bills', 'clients', 'templates', 'products', 'expenses', 'recurring', 'receipts', 'profiles', 'purchases', 'productions', 'purchase-orders', 'cash-book'];
+const DIRS = ['bills', 'clients', 'templates', 'products', 'expenses', 'recurring', 'receipts', 'profiles', 'purchases', 'productions', 'purchase-orders', 'cash-book', 'records', 'record-files'];
 // v1.10.83 - a data folder the app may not write to (inside Program Files, a
 // read-only drive, antivirus "controlled folder access") or a full disk used
 // to crash here with a raw stack trace the launcher never showed. Say it in
@@ -669,6 +670,115 @@ app.post('/api/purchase-orders', (req, res) => {
   res.json({ success: true, id: order.id });
 });
 
+// v1.10.85 - Records: old bills, quotations, challans and work orders kept
+// with a few details and their files. A folder of their own: reports and GST
+// returns read data/bills only, so a record never changes a total or a
+// return. The files are in data/record-files under names made here; a file
+// is never changed once saved (a new one gets a new name), which is what lets
+// the daily backups link to them instead of copying them (see linkOrCopy).
+const RECORDS_DIR = path.join(DATA_DIR, 'records');
+const RECORD_FILES_DIR = path.join(DATA_DIR, 'record-files');
+const RECORD_FILE_TYPES = {
+  '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp',
+  '.xls': 'application/vnd.ms-excel', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.csv': 'text/csv',
+};
+// Only a plain file name inside data/record-files; '' for anything else.
+const recordFilePath = (name) => {
+  const safe = safePathSegment(name, '');
+  const p = safe && safe === String(name) ? path.join(RECORD_FILES_DIR, safe) : '';
+  return p && isPathInside(p, RECORD_FILES_DIR) ? p : '';
+};
+const removeRecordFiles = (files) => {
+  for (const f of files || []) {
+    const p = recordFilePath(f?.name);
+    if (p) { try { fs.unlinkSync(p); } catch { /* already gone */ } }
+  }
+};
+
+app.get('/api/records', (req, res) => {
+  const records = readAllFromDir('records');
+  records.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.number || '').localeCompare(String(a.number || '')));
+  res.json(records);
+});
+
+app.post('/api/records', (req, res) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return errRes(res, 400, 'bad-request');
+  const record = cleanRecord(req.body);
+  const problem = recordProblem(record);
+  if (problem) return res.status(400).json({ error: problem, code: 'bad-request' });
+  const now = new Date().toISOString();
+  if (!record.id) { record.id = 'rec_' + Date.now().toString(36) + crypto.randomBytes(3).toString('hex'); record.createdAt = now; }
+  else record.updatedAt = now;
+  const filePath = path.join(RECORDS_DIR, safeFileName(record.id) + '.json');
+  if (!isPathInside(filePath, RECORDS_DIR)) return errRes(res, 400, 'invalid-path');
+  try {
+    // Files taken off the record in the form go now; the backups keep them.
+    const before = readJSON(filePath, null);
+    const kept = new Set(record.files.map((f) => f.name));
+    removeRecordFiles((before?.files || []).filter((f) => !kept.has(f?.name)));
+    if (before?.createdAt && !record.createdAt) record.createdAt = before.createdAt;
+    writeJSON(filePath, record);
+    res.json({ success: true, id: record.id, record });
+  } catch (err) {
+    errRes(res, 500, 'server-error', err);
+  }
+});
+
+app.delete('/api/records/:id', (req, res) => {
+  const filePath = path.join(RECORDS_DIR, safeFileName(req.params.id) + '.json');
+  if (!isPathInside(filePath, RECORDS_DIR)) return errRes(res, 400, 'invalid-path');
+  removeRecordFiles(readJSON(filePath, null)?.files);
+  deleteFile(filePath);
+  res.json({ success: true });
+});
+
+// The file comes as the request body, its own name in ?name=. Saved under a
+// new name (time + random + the original name), so nothing is overwritten.
+app.post('/api/record-files', express.raw({ type: () => true, limit: `${RECORD_FILE_LIMIT_MB}mb` }), (req, res) => {
+  try {
+    const original = safePathSegment(req.query.name, 'file');
+    const ext = path.extname(original).toLowerCase();
+    if (!RECORD_FILE_EXTS.includes(ext)) return res.status(400).json({ error: 'This kind of file cannot be attached. Use PDF, JPG, PNG, Excel or Word.', code: 'bad-request' });
+    if (!Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'The file is empty.', code: 'bad-request' });
+    const base = path.basename(original, path.extname(original)).replace(/\s+/g, '-').slice(0, 60) || 'file';
+    const name = `${Date.now().toString(36)}${crypto.randomBytes(3).toString('hex')}-${base}${ext}`;
+    const filePath = recordFilePath(name);
+    if (!filePath) return errRes(res, 400, 'invalid-path');
+    ensureDir(RECORD_FILES_DIR);
+    fs.writeFileSync(filePath, req.body, { flag: 'wx' });
+    res.json({ name, originalName: original, size: req.body.length });
+  } catch (err) {
+    errRes(res, 500, 'server-error', err);
+  }
+});
+
+app.get('/api/record-files/:name', (req, res) => {
+  const filePath = recordFilePath(req.params.name);
+  if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ error: 'This file is not on this computer.', code: 'not-found' });
+  const ext = path.extname(filePath).toLowerCase();
+  const type = RECORD_FILE_TYPES[ext] || 'application/octet-stream';
+  // PDFs and pictures open in the window; Excel and Word are downloaded.
+  const inline = ext === '.pdf' || type.startsWith('image/');
+  const shown = String(req.query.as || path.basename(filePath)).replace(/["\\\r\n]/g, '');
+  res.setHeader('Content-Type', type);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${shown.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(shown)}`);
+  fs.createReadStream(filePath).pipe(res);
+});
+
+// A file chosen in the form and then not kept (the form was cancelled).
+// Never one a saved record still lists.
+app.delete('/api/record-files/:name', (req, res) => {
+  const filePath = recordFilePath(req.params.name);
+  if (!filePath) return errRes(res, 400, 'invalid-path');
+  const inUse = readAllFromDir('records').some((r) => (r.files || []).some((f) => f?.name === req.params.name));
+  if (inUse) return res.status(409).json({ error: 'A saved record uses this file.', code: 'conflict' });
+  try { fs.unlinkSync(filePath); } catch { /* already gone */ }
+  res.json({ success: true });
+});
+
 // v1.10.83 - the cash book's own entries (cash recorded on invoices, receipts
 // and expenses is read from those, never copied here). Checked with the same
 // rules as the form, and only known fields are stored.
@@ -884,6 +994,7 @@ app.get('/api/export', (req, res) => {
     productions: readAllFromDir('productions'), // v1.10.83 (#115)
     purchaseOrders: readAllFromDir('purchase-orders'),
     cashBook: readAllFromDir('cash-book'),
+    records: readAllFromDir('records'), // v1.10.85 - the details; the files stay in data/record-files
     // v1.10.77 - never the PIN hash: a backup file can travel (email, Drive).
     meta: withoutLock(readJSON(META_PATH, {})),
     exportedAt: new Date().toISOString(),
@@ -918,6 +1029,7 @@ app.post('/api/import', (req, res) => {
     productionCount: 0, productionSkipped: 0,
     purchaseOrderCount: 0, purchaseOrderSkipped: 0,
     cashBookCount: 0, cashBookSkipped: 0,
+    recordCount: 0, recordSkipped: 0,
   };
 
   // Helper: upsert one entity to a directory, honouring the overwrite flag.
@@ -950,6 +1062,8 @@ app.post('/api/import', (req, res) => {
   (data.purchaseOrders || []).forEach(p => upsertOne('purchase-orders', p, 'purchaseOrderCount', 'purchaseOrderSkipped'));
   // v1.10.83 - a cash entry that fails the form's checks is skipped, not saved.
   (data.cashBook || []).forEach(c => { if (validateCashEntry(c)) counts.cashBookSkipped++; else upsertOne('cash-book', cleanCashEntry(c), 'cashBookCount', 'cashBookSkipped'); });
+  // v1.10.85 - records: the details only (a backup file holds no attached files).
+  (data.records || []).forEach(r => { const rec = cleanRecord(r); if (!rec.id || recordProblem(rec)) counts.recordSkipped++; else upsertOne('records', rec, 'recordCount', 'recordSkipped'); });
 
   // meta.json — same gating. Previously always overwrote → counters could
   // regress below existing bill numbers → collision loop on next save.
@@ -1434,7 +1548,9 @@ const CONTROL_ACTIONS = ['update', 'backup', 'restore', 'move', 'stop'];
 // guides tell people to use it.
 const controlActions = () => Object.fromEntries(CONTROL_ACTIONS.map(a => [a, a === 'stop' && !isWindows ? true : !!pickScript(a)]));
 
-function runControlScript(scriptPath) {
+// v1.10.85 - extraArgs go to the script; noInput closes its keyboard input, so a
+// "Press Enter to close" cannot wait forever on a window nobody can see.
+function runControlScript(scriptPath, { extraArgs = [], noInput = false } = {}) {
   return new Promise((resolve) => {
     if (!scriptPath) { resolve({ ok: false, error: 'Not available here: the script for this action is not in the app folder. Download the latest ZIP to get it.' }); return; }
     // v1.10.66 (#59) — update-unix.sh is plain POSIX sh, so it runs under `sh`
@@ -1444,11 +1560,11 @@ function runControlScript(scriptPath) {
     // /run/current-system/sw/bin/bash on NixOS.
     const unixShell = path.basename(scriptPath) === 'update-unix.sh' ? 'sh' : 'bash';
     const [cmd, args] = isWindows
-      ? ['powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath]]
-      : [unixShell, [scriptPath]];
+      ? ['powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...extraArgs]]
+      : [unixShell, [scriptPath, ...extraArgs]];
     let out = '', err = '';
     try {
-      const child = spawn(cmd, args, { detached: false, windowsHide: false });
+      const child = spawn(cmd, args, { detached: false, windowsHide: false, ...(noInput ? { stdio: ['ignore', 'pipe', 'pipe'] } : {}) });
       child.stdout?.on('data', d => { out += d.toString(); });
       child.stderr?.on('data', d => { err += d.toString(); });
       child.on('error', e => resolve({ ok: false, error: e.message }));
@@ -1534,6 +1650,19 @@ app.post('/api/control-panel/launch-script', async (req, res) => {
     setTimeout(() => process.exit(0), 400);
     return;
   }
+  // v1.10.85 - the updater is told it was started from the app (no "Press
+  // Enter" at the end), and once it is done this server restarts into the new
+  // version, so the page only has to reload. Windows only: elsewhere the app
+  // may run in Docker or as a service, which restarts it its own way.
+  if (action === 'update') {
+    const result = await runControlScript(pickScript('update'), { extraArgs: isWindows ? ['-FromApp'] : [], noInput: true });
+    if (!result.ok || !isWindows) { res.json(result); return; }
+    const restart = await startNewServer();
+    if (!restart.ok) { res.json({ ...result, restarting: false, restartError: restart.error }); return; }
+    res.json({ ...result, restarting: true });
+    setTimeout(() => process.exit(0), 400);
+    return;
+  }
   const script = pickScript(action);
   const result = await runControlScript(script);
   res.json(result);
@@ -1543,29 +1672,33 @@ app.post('/api/control-panel/launch-script', async (req, res) => {
 // A new copy is started with --after-pid and waits for this one to exit, so
 // it gets the same port back. On Windows it is started through WMI, so it is
 // not inside this process's job and survives this process exiting.
-app.post('/api/control-panel/restart', (req, res) => {
+// v1.10.85 - shared with Update; the caller answers, then exits.
+function startNewServer() {
   const serverJs = path.join(__dirname, 'server.js');
-  try {
-    if (isWindows) {
-      const q = (v) => `'${String(v).replace(/'/g, "''")}'`;
-      const cmd = `"${process.execPath}" "${serverJs}" --after-pid ${process.pid}`;
-      const ps = `$si = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [uint16]0 }; `
-        + `$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ${q(cmd)}; CurrentDirectory = ${q(__dirname)}; ProcessStartupInformation = $si }; `
-        + `exit $r.ReturnValue`;
-      const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { windowsHide: true, stdio: 'ignore' });
-      child.on('error', e => { if (!res.headersSent) res.json({ ok: false, error: e.message }); });
-      child.on('exit', code => {
-        if (res.headersSent) return;
-        if (code !== 0) { res.json({ ok: false, error: `Could not start a new copy (code ${code}). Close the app and open it again from its icon.` }); return; }
-        res.json({ ok: true });
-        setTimeout(() => process.exit(0), 400);
-      });
-    } else {
-      spawn(process.execPath, [serverJs, '--after-pid', String(process.pid)], { cwd: __dirname, detached: true, stdio: 'ignore' }).unref();
-      res.json({ ok: true });
-      setTimeout(() => process.exit(0), 400);
-    }
-  } catch (e) { res.json({ ok: false, error: e.message }); }
+  return new Promise((resolve) => {
+    try {
+      if (isWindows) {
+        const q = (v) => `'${String(v).replace(/'/g, "''")}'`;
+        const cmd = `"${process.execPath}" "${serverJs}" --after-pid ${process.pid}`;
+        const ps = `$si = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [uint16]0 }; `
+          + `$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ${q(cmd)}; CurrentDirectory = ${q(__dirname)}; ProcessStartupInformation = $si }; `
+          + `exit $r.ReturnValue`;
+        const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { windowsHide: true, stdio: 'ignore' });
+        child.on('error', e => resolve({ ok: false, error: e.message }));
+        child.on('exit', code => resolve(code === 0 ? { ok: true }
+          : { ok: false, error: `Could not start a new copy (code ${code}). Close the app and open it again from its icon.` }));
+      } else {
+        spawn(process.execPath, [serverJs, '--after-pid', String(process.pid)], { cwd: __dirname, detached: true, stdio: 'ignore' }).unref();
+        resolve({ ok: true });
+      }
+    } catch (e) { resolve({ ok: false, error: e.message }); }
+  });
+}
+
+app.post('/api/control-panel/restart', async (req, res) => {
+  const result = await startNewServer();
+  res.json(result);
+  if (result.ok) setTimeout(() => process.exit(0), 400);
 });
 
 // v1.10.83 - Remove the app, with the user choosing what goes. The program
@@ -1628,12 +1761,20 @@ const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BILL_TRASH_DIR = path.join(DATA_DIR, 'trash');
 function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 
-function copyDirRecursive(src, dst) {
+// v1.10.85 - the files attached to Records are never changed once saved (a
+// new file gets a new name), so the backups, the restore and its safety
+// snapshot link to them (a second name for the same bytes) instead of copying:
+// 30 daily backups hold each file once, not 30 times. Only those files: the
+// JSON files are rewritten in place and must stay real copies. A link cannot
+// cross drives, so a backup on another drive gets a copy.
+const RECORD_FILES_NAME = 'record-files';
+function copyDirRecursive(src, dst, link = path.basename(src) === RECORD_FILES_NAME) {
   if (!fs.existsSync(dst)) fs.mkdirSync(dst, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const s = path.join(src, entry.name);
     const d = path.join(dst, entry.name);
-    if (entry.isDirectory()) copyDirRecursive(s, d);
+    if (entry.isDirectory()) copyDirRecursive(s, d, link || entry.name === RECORD_FILES_NAME);
+    else if (link) { try { fs.linkSync(s, d); } catch { fs.copyFileSync(s, d); } }
     else fs.copyFileSync(s, d);
   }
 }
@@ -1674,13 +1815,22 @@ const installId = () => {
   return id;
 };
 const exists = (p) => fs.promises.access(p).then(() => true, () => false);
-async function copyDirAsync(src, dst) {
+// prev: the same folder in the previous day's copy. Record files already
+// there (same name and size: the same file, see RECORD_FILES_NAME) are linked
+// from it, so the backup folder too holds each one once.
+async function copyDirAsync(src, dst, prev = null) {
   await fs.promises.mkdir(dst, { recursive: true });
+  const linkFrom = prev && path.basename(src) === RECORD_FILES_NAME ? prev : null;
   for (const entry of await fs.promises.readdir(src, { withFileTypes: true })) {
     const s = path.join(src, entry.name);
     const d = path.join(dst, entry.name);
-    if (entry.isDirectory()) await copyDirAsync(s, d);
-    else await fs.promises.copyFile(s, d);
+    if (entry.isDirectory()) { await copyDirAsync(s, d, prev && path.join(prev, entry.name)); continue; }
+    if (linkFrom) {
+      const old = path.join(linkFrom, entry.name);
+      const same = await Promise.all([fs.promises.stat(old), fs.promises.stat(s)]).then(([a, b]) => a.size === b.size, () => false);
+      if (same && await fs.promises.link(old, d).then(() => true, () => false)) continue;
+    }
+    await fs.promises.copyFile(s, d);
   }
 }
 // Async on purpose: the folder can be a network or USB drive, and a
@@ -1708,7 +1858,8 @@ async function copyBackupToExtraFolder(date) {
     // removed mid-copy) never looks like a complete backup.
     const tmp = `${dst}.partial`;
     await fs.promises.rm(tmp, { recursive: true, force: true });
-    await copyDirAsync(src, tmp);
+    const prev = (await fs.promises.readdir(dir)).filter(n => DATE_DIR.test(n) && n < date).sort().pop();
+    await copyDirAsync(src, tmp, prev ? path.join(dir, prev) : null);
     await fs.promises.rename(tmp, dst);
     await fs.promises.writeFile(fromFile, me);
     const all = (await fs.promises.readdir(dir)).filter(n => DATE_DIR.test(n)).sort();

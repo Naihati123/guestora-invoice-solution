@@ -413,6 +413,26 @@ export const getNextPoNumber = async ({ peek = false, businessKey = '', date = '
   return formatPoNumber(next, date);
 };
 
+// ---- v1.10.85 Records (old bills, quotations, challans, work orders) ----
+export const getAllRecords = async () => apiFetch(`${API}/records`);
+
+export const saveRecord = async (record) => {
+  const res = await apiFetch(`${API}/records`, { method: 'POST', body: JSON.stringify(record) });
+  return res.record || { ...record, id: res.id };
+};
+
+export const deleteRecord = (id) => apiFetch(`${API}/records/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+// The file itself is the body; returns { name, originalName, size }.
+export const uploadRecordFile = (file) => apiFetch(`${API}/record-files?name=${encodeURIComponent(file.name)}`, {
+  method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file,
+});
+
+// A file uploaded in the form and then not kept.
+export const discardRecordFile = (name) => apiFetch(`${API}/record-files/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
+export const recordFileUrl = (file) => `${API}/record-files/${encodeURIComponent(file.name)}?as=${encodeURIComponent(file.originalName || file.name)}`;
+
 // ---- Recurring Invoices ----
 export const getAllRecurring = async () => {
   return apiFetch(`${API}/recurring`);
@@ -578,15 +598,27 @@ export const runUpdateNow = async () => {
     });
     const data = await res.json();
     if (!data.ok) return { ok: false, error: data.error || data.stderr || 'The update script did not finish.' };
-    return { ok: true };
+    // v1.10.85 - on Windows the server restarts into the new version by itself.
+    return { ok: true, restarting: !!data.restarting };
   } catch (e) {
     return { ok: false, error: e.message };
   }
 };
 
+// v1.10.85 - after a restart: reload this page once the server answers again.
+// False if it did not come back within about 30 seconds.
+export const reloadWhenServerBack = async () => {
+  await new Promise(res => setTimeout(res, 1500));
+  for (let i = 0; i < 40; i++) {
+    try { if ((await fetch('/api/profile', { cache: 'no-store' })).ok) { window.location.reload(); return true; } } catch { /* still starting */ }
+    await new Promise(res => setTimeout(res, 750));
+  }
+  return false;
+};
+
 export const exportAllData = async (selection) => {
   const [all, version] = await Promise.all([apiFetch(`${API}/export`), getAppVersion()]);
-  const sel = selection || { profile: true, profiles: true, bills: true, clients: true, products: true, expenses: true, purchases: true, recurring: true, receipts: true, termsTemplates: true, meta: true, localStorage: true };
+  const sel = selection || { profile: true, profiles: true, bills: true, clients: true, products: true, expenses: true, purchases: true, recurring: true, receipts: true, records: true, termsTemplates: true, meta: true, localStorage: true };
 
   const data = { exportedAt: new Date().toISOString(), version, __freegstbill_backup: true };
   if (sel.profile)        data.profile = all.profile;
@@ -601,6 +633,7 @@ export const exportAllData = async (selection) => {
   if (sel.expenses)       data.cashBook = all.cashBook; // v1.10.83 - the cash book travels with expenses
   if (sel.recurring)      data.recurring = all.recurring;
   if (sel.receipts)       data.receipts = all.receipts;
+  if (sel.records)        data.records = all.records; // v1.10.85 - the details; the attached files are in the daily backups
   if (sel.purchases)      data.purchases = all.purchases;
   if (sel.purchases)      data.purchaseOrders = all.purchaseOrders; // v1.10.83 (#112) - travel with purchase bills
   if (sel.meta)           data.meta = all.meta; // includes regionMode, enabledModules, etc. on server
@@ -630,6 +663,7 @@ export const inspectBackup = (jsonString) => {
       purchases: Array.isArray(data.purchases) ? data.purchases.length : 0,
       recurring: Array.isArray(data.recurring) ? data.recurring.length : 0,
       receipts: Array.isArray(data.receipts) ? data.receipts.length : 0,
+      records: Array.isArray(data.records) ? data.records.length : 0,
       meta: data.meta ? Object.keys(data.meta).length : 0,
       localStorage: data.localStorage ? Object.keys(data.localStorage).length : 0,
     },
@@ -641,7 +675,7 @@ export const inspectBackup = (jsonString) => {
 export const importData = async (jsonString, selection) => {
   const inspected = typeof jsonString === 'string' ? inspectBackup(jsonString) : { raw: jsonString };
   const data = inspected.raw;
-  const sel = selection || { profile: true, profiles: true, bills: true, clients: true, products: true, expenses: true, purchases: true, recurring: true, receipts: true, termsTemplates: true, meta: true, localStorage: true };
+  const sel = selection || { profile: true, profiles: true, bills: true, clients: true, products: true, expenses: true, purchases: true, recurring: true, receipts: true, records: true, termsTemplates: true, meta: true, localStorage: true };
 
   // Build a filtered payload — never touch collections the user didn't tick.
   const payload = {};
@@ -656,6 +690,7 @@ export const importData = async (jsonString, selection) => {
   if (sel.expenses && data.cashBook)             payload.cashBook = data.cashBook;
   if (sel.recurring && data.recurring)           payload.recurring = data.recurring;
   if (sel.receipts && data.receipts)             payload.receipts = data.receipts;
+  if (sel.records && data.records)               payload.records = data.records;
   if (sel.purchases && data.purchases)           payload.purchases = data.purchases;
   if (sel.purchases && data.purchaseOrders)      payload.purchaseOrders = data.purchaseOrders;
   if (sel.meta && data.meta)                     payload.meta = data.meta;

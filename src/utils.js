@@ -1914,6 +1914,8 @@ export const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', module: 'dashboard', core: true, section: 'main', help: 'Your sales, dues and shortcuts at a glance.' },
   { id: 'new', label: 'New invoice', module: 'invoicing', core: true, section: 'main', help: 'Tax invoices, quotations, credit notes and challans.' },
   { id: 'clients', label: 'Clients', module: 'clients', core: true, section: 'main', help: 'The people and businesses you bill.' },
+  // v1.10.85 - old documents with their files, next to the ones made here.
+  { id: 'records', label: 'Records', module: 'records', section: 'main', help: 'Old bills, quotations, challans and work orders with their files, and what is billed on each work order.' },
   { id: 'inventory', label: 'Products', module: 'inventory', section: 'main', help: 'Your product and service list, with stock.' },
   { id: 'expenses', label: 'Expenses', module: 'expenses', section: 'main', help: 'Rent, salaries and other running costs.' },
   { id: 'purchases', label: 'Purchases', module: 'purchases', section: 'main', help: 'Bills from your suppliers, for stock and input tax credit.' },

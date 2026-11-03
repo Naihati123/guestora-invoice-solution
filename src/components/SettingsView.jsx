@@ -24,7 +24,7 @@ import { rekeyCentres } from '../utils/costCentres';
 import InvoiceNumberSettings from './InvoiceNumberSettings';
 import SignatureImages, { SIGN_LAYOUTS } from './SignatureImages';
 import { PURPOSE_CODES } from '../utils/purposeCodes';
-import { getBackupsList, restoreBackup, triggerBackup, deleteBackup, getTrashedBills, restoreTrashedBill, purgeTrashedBill, runUpdateNow, saveBill, applyStockChanges, getBackupFolder, setBackupFolder } from '../store';
+import { getBackupsList, restoreBackup, triggerBackup, deleteBackup, getTrashedBills, restoreTrashedBill, purgeTrashedBill, runUpdateNow, reloadWhenServerBack, saveBill, applyStockChanges, getBackupFolder, setBackupFolder } from '../store';
 import { APP_NAME } from '../brand';
 
 // v1.10.36 — Section order for the jump-nav pill bar. Keeping this at
@@ -173,6 +173,13 @@ export default function SettingsView({ onSaved }) {
     setUpdatingNow(true);
     toast('Updating… your data is backed up first. This takes about a minute.', 'info', 8000);
     const result = await runUpdateNow();
+    if (result.ok && result.restarting) {
+      toast('Update finished. Restarting the app…', 'success', 10000);
+      if (await reloadWhenServerBack()) return;
+      setUpdatingNow(false);
+      toast('The app did not come back by itself. Close it and open it again from its icon.', 'error', 15000);
+      return;
+    }
     setUpdatingNow(false);
     toast(result.ok ? 'Update finished. Reload the page to use the new version.' : `Update failed — ${result.error}`,
       result.ok ? 'success' : 'error', 10000);
@@ -524,6 +531,7 @@ export default function SettingsView({ onSaved }) {
     { id: 'purchases',      label: 'Purchase bills',           hint: 'Vendor bills used for ITC, and purchase orders' },
     { id: 'recurring',      label: 'Recurring invoices',       hint: 'Auto-billing schedule entries' },
     { id: 'receipts',       label: 'Receipts',                 hint: 'Payment receipts' },
+    { id: 'records',        label: 'Records',                  hint: 'Old bills, quotations, challans, work orders (details only: attached files are in the daily backups)' },
     { id: 'termsTemplates', label: 'Terms templates',          hint: 'Reusable T&C library' },
     { id: 'meta',           label: 'App settings',             hint: 'Region, modules, invoice number format, display options' },
     { id: 'localStorage',   label: 'Local preferences',        hint: 'Custom units, theme, last region preference' },
@@ -616,6 +624,7 @@ export default function SettingsView({ onSaved }) {
       if (result.purchaseCount) parts.push(`${result.purchaseCount} purchase bill(s)`);
       if (result.recurringCount) parts.push(`${result.recurringCount} recurring invoice(s)`);
       if (result.receiptCount) parts.push(`${result.receiptCount} receipt(s)`);
+      if (result.recordCount) parts.push(`${result.recordCount} record(s)`);
       const lsCount = importSel.localStorage ? (importInspection?.counts?.localStorage || 0) : 0;
       if (lsCount) parts.push(`${lsCount} local preference(s)`);
       toast(parts.length ? `Restored: ${parts.join(', ')}` : 'Restore complete', 'success');

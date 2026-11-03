@@ -14,9 +14,17 @@ const download = (text, name) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-// what: 'products' | 'clients'. parse(text) -> { list, skipped, errors }.
-// save(item) saves one. intro: what the columns are.
-export default function CsvListImport({ what, sample, sampleName, doc, intro, parse, save, onClose, onDone }) {
+// what: 'products' | 'clients' | 'records'. parse(text) -> { list, skipped,
+// errors, warning? }. save(item) saves one. intro: what the columns are.
+// skipNote and footer replace the products/clients wording (v1.10.85, Records).
+const SKIP_NOTE = 'Names already in your list are skipped, so importing the same file twice is safe.';
+const OLD_INVOICES_NOTE = (
+  <>
+    Old invoices? Import them on the Dashboard with <b>CSV import / export</b>, which has its own template.
+    <HelpButton title="Importing old invoices" doc="dashboard#csv" size={14} />
+  </>
+);
+export default function CsvListImport({ what, sample, sampleName, doc, intro, parse, save, onClose, onDone, skipNote = SKIP_NOTE, footer = OLD_INVOICES_NOTE }) {
   const [plan, setPlan] = useState(null); // { fileName, list, skipped, errors }
   const [busy, setBusy] = useState(false);
 
@@ -50,10 +58,10 @@ export default function CsvListImport({ what, sample, sampleName, doc, intro, pa
     <div className="modal-overlay" onClick={close}>
       <div className="modal-content" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 className="section-title" style={{ margin: 0, textTransform: 'none' }}>Import {what} from CSV <HelpButton title={`Importing ${what}`} doc={doc} size={16} /></h3>
+          <h3 className="section-title" style={{ margin: 0, textTransform: 'none' }}>Import {what} from CSV {doc && <HelpButton title={`Importing ${what}`} doc={doc} size={16} />}</h3>
           <button type="button" className="icon-btn" onClick={close} title="Close" aria-label="Close"><X size={16} /></button>
         </div>
-        <p className="text-muted" style={{ fontSize: '0.85rem' }}>{intro} Names already in your list are skipped, so importing the same file twice is safe.</p>
+        <p className="text-muted" style={{ fontSize: '0.85rem' }}>{intro} {skipNote}</p>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           <button type="button" className="btn btn-secondary" onClick={() => download(sample, sampleName)}
             title="A CSV with the right column headings and two example rows. Open it in Excel or Google Sheets, replace the examples and save as CSV.">
@@ -68,6 +76,7 @@ export default function CsvListImport({ what, sample, sampleName, doc, intro, pa
           <div style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 8, fontSize: '0.85rem' }}>
             <strong>{plan.fileName}</strong>: {n} ready to import
             {plan.skipped > 0 && <> · {plan.skipped} already in your list (skipped)</>}
+            {plan.warning && <p className="text-muted" style={{ margin: '0.5rem 0 0' }}>{plan.warning}</p>}
             {plan.errors.length > 0 && (
               <>
                 <p style={{ color: 'var(--danger)', margin: '0.5rem 0 0.25rem' }}>{plan.errors.length} row{plan.errors.length === 1 ? '' : 's'} with a problem (not imported; fix the file and choose it again):</p>
@@ -78,10 +87,7 @@ export default function CsvListImport({ what, sample, sampleName, doc, intro, pa
             )}
           </div>
         )}
-        <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0.75rem 0 0' }}>
-          Old invoices? Import them on the Dashboard with <b>CSV import / export</b>, which has its own template.
-          <HelpButton title="Importing old invoices" doc="dashboard#csv" size={14} />
-        </p>
+        {footer && <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0.75rem 0 0' }}>{footer}</p>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
           <button type="button" className="btn btn-secondary" onClick={close} disabled={busy}>Close</button>
           <button type="button" className="btn btn-primary" onClick={runImport} disabled={busy || !n}>

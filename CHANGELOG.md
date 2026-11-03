@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.85] - 2026-11-03
+
+### How to update
+
+**Current version:** 1.10.84  →  **New version:** 1.10.85
+
+Open the app, go to **Settings → Check for Updates**, then click **Update Now**.
+Your invoices are backed up first and kept.
+
+This one time, the update will look stuck on "Updating…": 1.10.84's updater
+waits for a key press nobody can see. Wait two minutes, then open
+**Control Panel** (left menu) and click **Restart**. The app comes back as
+1.10.85. Later updates finish and restart by themselves.
+
+### Added
+- **Records** (left menu, under Clients): one place for old bills,
+  quotations, delivery challans, work orders, proformas and credit notes made
+  before this app, next to the ones made here.
+  - Save the type, number, date, party, amount, work order number and notes,
+    and attach the PDF, scan or photo (also Excel or Word files, up to 25 MB
+    each). Open it with one click.
+  - **Import from Excel (CSV)** adds many at once, with a sample sheet. A type
+    and number already saved is skipped, so the same file can be imported
+    twice.
+  - Search by number, party, work order or notes; filter by type, old or
+    made here, and financial year.
+  - **Work orders** tab: each work order with its value, what is billed
+    against it (invoices less credit notes), what is left to bill, and its
+    challans and invoices. Bills made here count through their
+    **Work Order No**.
+  - Records are kept apart from your books: they are not in the Dashboard,
+    reports or GST returns.
+  - The details are in **Export Backup** (tick Records). Attached files are in
+    the daily backups, linked rather than copied, so they take no extra space
+    day after day.
+
+### Fixed
+- **Update Now no longer hangs.** The updater waited for Enter in a window no
+  one could see, so the button stayed on "Updating…". It now finishes, the app
+  restarts into the new version and the page reloads by itself.
+
+---
+
 ## [1.10.84] - 2026-11-03
 
 First update of **Guestora Invoice**.
